@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Квантовая бомба Элицура–Вайдмана</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --panel: #141b2d;
+    --border: #2a3548;
+    --text: #e0e8f0;
+    --text-dim: #8899aa;
+    --photon: #00e5ff;
+    --bright: #00ff88;
+    --dark: #ff4466;
+    --explosion: #ff8800;
+    --accent: #4a8aff;
+    --gold: #ffcc00;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    text-align: center;
+    padding: 20px 16px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: .4px; }
+  header p { color: var(--text-dim); font-size: .85rem; margin-top: 6px; }
+  .lang-switch{display:inline-flex;gap:4px;margin-top:10px}
+  .lang-btn{
+    background:#1a2540;color:var(--text-dim);border:1px solid var(--border);
+    border-radius:7px;padding:5px 12px;font-family:ui-monospace,monospace;
+    font-size:11px;font-weight:650;letter-spacing:.08em;cursor:pointer;transition:all .15s;
+  }
+  .lang-btn:hover{background:#2a3a58;color:var(--text)}
+  .lang-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .main {
+    display: flex;
+    flex: 1;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .diagram-container {
+    flex: 1 1 620px;
+    min-width: 300px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  #diagram { width: 100%; height: auto; display: block; }
+  .sidebar { flex: 0 1 320px; display: flex; flex-direction: column; gap: 12px; min-width: 260px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .panel h2 {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .control-group { margin-bottom: 14px; }
+  .control-group label { display: block; font-size: .82rem; color: var(--text-dim); margin-bottom: 6px; }
+  .toggle-row { display: flex; gap: 6px; }
+  button {
+    background: #1e2a40;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 9px 14px;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  button:hover:not(:disabled) { background: #2a3a58; border-color: var(--accent); }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+  button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    width: 100%;
+    font-weight: 600;
+    padding: 12px;
+    font-size: .95rem;
+  }
+  button.primary:hover:not(:disabled) { background: #5a9aff; }
+  button.danger { border-color: var(--dark); color: var(--dark); }
+  button.danger:hover:not(:disabled) { background: rgba(255,68,102,.12); }
+  input[type=range] { accent-color: var(--accent); }
+
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; font-size: .88rem;
+    border-bottom: 1px solid rgba(42,53,72,.55);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-dim); }
+  .stat-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-value.bright { color: var(--bright); }
+  .stat-value.dark { color: var(--dark); }
+  .stat-value.explosion { color: var(--explosion); }
+  .stat-value.gold { color: var(--gold); }
+  #resultBanner {
+    display: none;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: .88rem;
+    line-height: 1.45;
+  }
+  #resultBanner.show { display: block; }
+  #resultBanner.bright { background: rgba(0,255,136,.09); border: 1px solid rgba(0,255,136,.3); }
+  #resultBanner.dark { background: rgba(255,68,102,.09); border: 1px solid rgba(255,68,102,.3); }
+  #resultBanner.explosion { background: rgba(255,136,0,.09); border: 1px solid rgba(255,136,0,.3); }
+  #resultBanner.info { background: rgba(74,138,255,.09); border: 1px solid rgba(74,138,255,.3); }
+
+  .explanation { padding: 0 16px 20px; max-width: 1400px; margin: 0 auto; width: 100%; }
+  .explanation-inner {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    font-size: .88rem;
+    line-height: 1.65;
+    color: var(--text-dim);
+  }
+  .explanation-inner strong { color: var(--text); }
+  .explanation-inner .hl { color: var(--gold); }
+  .explanation-inner .d2 { color: var(--dark); }
+  .path-line { stroke: #1e2a40; stroke-width: 2; fill: none; }
+  .component-label { fill: var(--text-dim); font-size: 11px; font-family: inherit; text-anchor: middle; }
+
+  @media (max-width: 768px) {
+    .sidebar { flex: 1 1 100%; }
+    header h1 { font-size: 1.15rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 data-i18n="h1">Квантовая бомба Элицура–Вайдмана</h1>
+  <p data-i18n="subtitle">Интерактивная демонстрация «измерения без взаимодействия»</p>
+  <div class="lang-switch">
+    <button class="lang-btn" data-lang="ru">RU</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="diagram-container">
+    <svg id="diagram" viewBox="0 0 760 440" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <filter id="glow" x="-150%" y="-150%" width="400%" height="400%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <radialGradient id="photonGrad">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="35%" stop-color="#a0f0ff"/>
+          <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="explosionGrad">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="20%" stop-color="#ffff44"/>
+          <stop offset="55%" stop-color="#ff8800"/>
+          <stop offset="100%" stop-color="#ff2200" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="flashGrad">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <g>
+        <line x1="60" y1="300" x2="200" y2="300" class="path-line"/>
+        <line x1="200" y1="300" x2="200" y2="100" class="path-line"/>
+        <line x1="200" y1="300" x2="450" y2="300" class="path-line"/>
+        <line x1="200" y1="100" x2="450" y2="100" class="path-line"/>
+        <line x1="450" y1="300" x2="450" y2="100" class="path-line"/>
+        <line x1="450" y1="100" x2="635" y2="55" class="path-line"/>
+        <line x1="450" y1="100" x2="635" y2="145" class="path-line"/>
+      </g>
+
+      <g>
+        <circle cx="60" cy="300" r="14" fill="#1a2540" stroke="#4a6a9a" stroke-width="1.5"/>
+        <circle cx="60" cy="300" r="5" fill="#4a6a9a" opacity=".5"/>
+        <text x="60" y="330" class="component-label" data-i18n="svgSource">Источник</text>
+      </g>
+
+      <g>
+        <rect x="188" y="288" width="24" height="24" rx="2" transform="rotate(45 200 300)"
+              fill="rgba(74,138,255,0.15)" stroke="#4a8aff" stroke-width="1.5"/>
+        <text x="200" y="340" class="component-label">BS1</text>
+      </g>
+
+      <g>
+        <rect x="438" y="88" width="24" height="24" rx="2" transform="rotate(45 450 100)"
+              fill="rgba(74,138,255,0.15)" stroke="#4a8aff" stroke-width="1.5"/>
+        <text x="450" y="140" class="component-label">BS2</text>
+      </g>
+
+      <g>
+        <line x1="176" y1="100" x2="224" y2="100" stroke="#c0c8d0" stroke-width="4" stroke-linecap="round"/>
+        <line x1="176" y1="100" x2="224" y2="100" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+        <text x="200" y="80" class="component-label">M1</text>
+      </g>
+
+      <g>
+        <line x1="450" y1="276" x2="450" y2="324" stroke="#c0c8d0" stroke-width="4" stroke-linecap="round"/>
+        <line x1="450" y1="276" x2="450" y2="324" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+        <text x="476" y="305" class="component-label">M2</text>
+      </g>
+
+      <g>
+        <circle cx="635" cy="55" r="18" fill="#141b2d" stroke="#00ff88" stroke-width="2" id="dBrightCircle"/>
+        <text x="635" y="30" class="component-label" style="fill:#00ff88;font-weight:600;font-size:12px">D₁</text>
+        <text x="635" y="88" class="component-label" data-i18n="svgBright">«Светлый»</text>
+      </g>
+
+      <g>
+        <circle cx="635" cy="145" r="18" fill="#141b2d" stroke="#ff4466" stroke-width="2" id="dDarkCircle"/>
+        <text x="635" y="178" class="component-label" style="fill:#ff4466;font-weight:600;font-size:12px">D₂</text>
+        <text x="635" y="196" class="component-label" data-i18n="svgDark">«Тёмный»</text>
+      </g>
+
+      <g id="bombGroup" style="display:none"></g>
+      <g id="photonsLayer"></g>
+      <g id="effectsLayer"></g>
+    </svg>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel">
+      <h2 data-i18n="ctrlHead">Управление</h2>
+      <div class="control-group">
+        <label data-i18n="bombOnPath">Бомба на пути фотона</label>
+        <div class="toggle-row">
+          <button id="btnBombNone" class="active" style="flex:1" data-i18n="bombNone">Нет</button>
+          <button id="btnBombDud" style="flex:1" data-i18n="bombDud">Неисправная</button>
+          <button id="btnBombWorking" style="flex:1" data-i18n="bombWorking">Рабочая</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label data-i18n="speedLbl">Скорость анимации</label>
+        <input type="range" id="speedSlider" min="0.4" max="3" step="0.1" value="1" style="width:100%">
+      </div>
+      <button class="primary" id="btnFire" data-i18n="fire">⚡ Запустить фотон</button>
+      <div class="toggle-row" style="margin-top:8px">
+        <button id="btnAuto10" style="flex:1">×10</button>
+        <button id="btnAuto100" style="flex:1">×100</button>
+        <button id="btnReset" class="danger" style="flex:1" data-i18n="reset">Сброс</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 data-i18n="statsHead">Статистика</h2>
+      <div class="stat-row"><span class="stat-label" data-i18n="stTotal">Всего запусков</span><span class="stat-value" id="statTotal">0</span></div>
+      <div class="stat-row"><span class="stat-label" data-i18n="stExplosion">Взрывов</span><span class="stat-value explosion" id="statExplosion">0</span></div>
+      <div class="stat-row"><span class="stat-label" data-i18n="stBright">D₁ (светлый)</span><span class="stat-value bright" id="statBright">0</span></div>
+      <div class="stat-row"><span class="stat-label" data-i18n="stDark">D₂ (тёмный)</span><span class="stat-value dark" id="statDark">0</span></div>
+      <div class="stat-row"><span class="stat-label" data-i18n="stDetected">Бомба обнаружена</span><span class="stat-value gold" id="statDetected">0</span></div>
+    </div>
+
+    <div class="panel">
+      <div id="resultBanner"></div>
+    </div>
+  </div>
+</div>
+
+<div class="explanation">
+  <div class="explanation-inner" data-i18n-html="explain">
+    Без бомбы фотон после интерферометра всегда попадает в <strong>«светлый» детектор D₁</strong> — интерференция
+    направляет всю амплитуду туда. Если на верхнем пути стоит <strong>рабочая бомба</strong>, она разрушает интерференцию:
+    фотон либо взрывает её (50%), либо уходит в D₁ (25%), либо — и это главное — в <span class="d2">«тёмный» детектор D₂</span> (25%).
+    <br><br>
+    <span class="hl">Щелчок в D₂ — это и есть «измерение без взаимодействия».</span> Если сработал тёмный детектор, значит,
+    фотон точно шёл по нижнему пути, а бомба на верхнем пути — рабочая. При этом фотон с ней <strong>не взаимодействовал</strong>,
+    и она <strong>не взорвалась</strong>. Если бы бомба была неисправна, она никак не влияла бы на фотон, и интерференция
+    по-прежнему направляла бы его только в D₁.
+    <br><br>
+    <em style="color:#6a7a8a">Совет: выберите «Рабочая», нажмите «×100» и посмотрите на статистику — примерно в 25% случаев
+    сработает тёмный детектор, и вы «обнаружите» бомбу, не взорвав её.</em>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   I18N
+   ══════════════════════════════════════════════════════════════════ */
+const I18N = {
+  ru: {
+    docTitle: 'Квантовая бомба Элицура–Вайдмана',
+    h1: 'Квантовая бомба Элицура–Вайдмана',
+    subtitle: 'Интерактивная демонстрация «измерения без взаимодействия»',
+    svgSource: 'Источник',
+    svgBright: '«Светлый»',
+    svgDark: '«Тёмный»',
+    ctrlHead: 'Управление',
+    bombOnPath: 'Бомба на пути фотона',
+    bombNone: 'Нет',
+    bombDud: 'Неисправная',
+    bombWorking: 'Рабочая',
+    speedLbl: 'Скорость анимации',
+    fire: '⚡ Запустить фотон',
+    reset: 'Сброс',
+    statsHead: 'Статистика',
+    stTotal: 'Всего запусков',
+    stExplosion: 'Взрывов',
+    stBright: 'D₁ (светлый)',
+    stDark: 'D₂ (тёмный)',
+    stDetected: 'Бомба обнаружена',
+    bombLabelWorking: '⚠ РАБОЧАЯ',
+    bombLabelDud: 'неисправна',
+    msgExplosion: '💥 <strong>Взрыв!</strong> Фотон попал в рабочую бомбу. Это происходит в 50% случаев.',
+    msgBrightWorking: '🔵 Фотон попал в <strong>D₁ (светлый)</strong>. Бомба была рабочей, но фотон прошёл по нижнему пути и сохранил «половинную» вероятность.',
+    msgBrightDud: '🔵 Фотон попал в <strong>D₁ (светлый)</strong>. Неисправная бомба не влияет на интерференцию — как и ожидалось.',
+    msgBrightNone: '🔵 Фотон попал в <strong>D₁ (светлый)</strong>. Без бомбы интерференция всегда направляет фотон сюда.',
+    msgDark: '🎯 <strong>Сработал D₂ (тёмный)!</strong> Это значит, что бомба <strong>есть и она рабочая</strong> — но при этом не взорвалась! Измерение без взаимодействия удалось.',
+    msgAuto: (n) => 'Выполнено <strong>' + n + '</strong> запусков. Смотрите статистику справа.',
+    explain: 'Без бомбы фотон после интерферометра всегда попадает в <strong>«светлый» детектор D₁</strong> — интерференция направляет всю амплитуду туда. Если на верхнем пути стоит <strong>рабочая бомба</strong>, она разрушает интерференцию: фотон либо взрывает её (50%), либо уходит в D₁ (25%), либо — и это главное — в <span class="d2">«тёмный» детектор D₂</span> (25%).<br><br><span class="hl">Щелчок в D₂ — это и есть «измерение без взаимодействия».</span> Если сработал тёмный детектор, значит, фотон точно шёл по нижнему пути, а бомба на верхнем пути — рабочая. При этом фотон с ней <strong>не взаимодействовал</strong>, и она <strong>не взорвалась</strong>. Если бы бомба была неисправна, она никак не влияла бы на фотон, и интерференция по-прежнему направляла бы его только в D₁.<br><br><em style="color:#6a7a8a">Совет: выберите «Рабочая», нажмите «×100» и посмотрите на статистику — примерно в 25% случаев сработает тёмный детектор, и вы «обнаружите» бомбу, не взорвав её.</em>'
+  },
+  en: {
+    docTitle: 'Elitzur–Vaidman Quantum Bomb',
+    h1: 'Elitzur–Vaidman Quantum Bomb',
+    subtitle: 'Interactive demonstration of “interaction-free measurement”',
+    svgSource: 'Source',
+    svgBright: '“Bright”',
+    svgDark: '“Dark”',
+    ctrlHead: 'Controls',
+    bombOnPath: 'Bomb on the photon path',
+    bombNone: 'None',
+    bombDud: 'Dud',
+    bombWorking: 'Working',
+    speedLbl: 'Animation speed',
+    fire: '⚡ Fire photon',
+    reset: 'Reset',
+    statsHead: 'Statistics',
+    stTotal: 'Total runs',
+    stExplosion: 'Explosions',
+    stBright: 'D₁ (bright)',
+    stDark: 'D₂ (dark)',
+    stDetected: 'Bomb detected',
+    bombLabelWorking: '⚠ WORKING',
+    bombLabelDud: 'dud',
+    msgExplosion: '💥 <strong>Explosion!</strong> The photon hit a working bomb. This happens in 50% of cases.',
+    msgBrightWorking: '🔵 The photon hit <strong>D₁ (bright)</strong>. The bomb was working, but the photon travelled along the lower path and kept its “half” probability.',
+    msgBrightDud: '🔵 The photon hit <strong>D₁ (bright)</strong>. A dud bomb does not affect interference — as expected.',
+    msgBrightNone: '🔵 The photon hit <strong>D₁ (bright)</strong>. Without a bomb, interference always sends the photon here.',
+    msgDark: '🎯 <strong>D₂ (dark) fired!</strong> This means the bomb <strong>is present and working</strong> — yet it did not explode! Interaction-free measurement succeeded.',
+    msgAuto: (n) => 'Completed <strong>' + n + '</strong> runs. See the statistics on the right.',
+    explain: 'Without a bomb, the photon after the interferometer always lands in the <strong>“bright” detector D₁</strong> — interference directs the entire amplitude there. If a <strong>working bomb</strong> sits on the upper path, it destroys interference: the photon either explodes it (50%), or goes to D₁ (25%), or — and this is the key — to the <span class="d2">“dark” detector D₂</span> (25%).<br><br><span class="hl">A click in D₂ is exactly the “interaction-free measurement”.</span> If the dark detector fired, it means the photon definitely travelled along the lower path and the bomb on the upper path is working. Yet the photon did <strong>not interact</strong> with it, and the bomb <strong>did not explode</strong>. If the bomb were a dud, it would have no effect on the photon, and interference would still send it only to D₁.<br><br><em style="color:#6a7a8a">Tip: choose “Working”, press “×100” and look at the statistics — in about 25% of cases the dark detector fires, and you “detect” the bomb without exploding it.</em>'
+  }
+};
+
+let currentLang = 'ru';
+(function initLang(){
+  let urlLang = null;
+  try { urlLang = new URLSearchParams(location.search).get('lang'); } catch(e){}
+  const stored = localStorage.getItem('lang');
+  const candidate = (urlLang || stored || 'ru').toLowerCase();
+  currentLang = I18N[candidate] ? candidate : 'ru';
+})();
+
+function applyLang(lang){
+  if (!I18N[lang]) lang = 'ru';
+  currentLang = lang;
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = d.docTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (d[k] != null) el.textContent = d[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if (d[k] != null) el.innerHTML = d[k];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+
+  // Перерисовать бомбу, чтобы её метка тоже стала двуязычной
+  if (currentScenario !== 'none') {
+    drawBomb(currentScenario === 'working');
+  }
+
+  // Если показан баннер результата — переписать его на новом языке
+  if (lastResult && resultBanner.classList.contains('show')) {
+    showResult(lastResult.scenario, lastResult.result);
+  } else if (lastResult && resultBanner.classList.contains('info')) {
+    resultBanner.innerHTML = d.msgAuto(lastResult.n);
+  }
+
+  try { localStorage.setItem('lang', lang); } catch(e){}
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+window.addEventListener('storage', e => {
+  if (e.key === 'lang' && e.newValue && I18N[e.newValue] && e.newValue !== currentLang) {
+    applyLang(e.newValue);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ОРИГИНАЛЬНАЯ ЛОГИКА
+   ══════════════════════════════════════════════════════════════════ */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const GEO = {
+  source:   [60, 300],
+  bs1:      [200, 300],
+  m1:       [200, 100],
+  m2:       [450, 300],
+  bs2:      [450, 100],
+  dBright:  [635, 55],
+  dDark:    [635, 145],
+  bombPos:  [330, 100],
+  lowerMid: [450, 220],
+};
+
+const BASE_SPEED = 520;
+
+let currentScenario = 'none';
+let isRunning = false;
+let animToken = 0;
+let lastResult = null;
+let stats = { total: 0, explosions: 0, bright: 0, dark: 0, detected: 0 };
+
+const diagram       = document.getElementById('diagram');
+const photonsLayer  = document.getElementById('photonsLayer');
+const effectsLayer  = document.getElementById('effectsLayer');
+const bombGroup     = document.getElementById('bombGroup');
+const speedSlider   = document.getElementById('speedSlider');
+const btnFire       = document.getElementById('btnFire');
+const btnAuto10     = document.getElementById('btnAuto10');
+const btnAuto100    = document.getElementById('btnAuto100');
+const btnReset      = document.getElementById('btnReset');
+const btnBombNone   = document.getElementById('btnBombNone');
+const btnBombDud    = document.getElementById('btnBombDud');
+const btnBombWorking= document.getElementById('btnBombWorking');
+const resultBanner  = document.getElementById('resultBanner');
+
+function polylineLength(pts) {
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) {
+    len += Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]);
+  }
+  return len;
+}
+function pointAtDistance(pts, dist) {
+  if (dist <= 0) return pts[0].slice();
+  let remaining = dist;
+  for (let i = 1; i < pts.length; i++) {
+    const dx = pts[i][0] - pts[i-1][0];
+    const dy = pts[i][1] - pts[i-1][1];
+    const segLen = Math.hypot(dx, dy);
+    if (remaining <= segLen) {
+      const t = remaining / segLen;
+      return [pts[i-1][0] + dx * t, pts[i-1][1] + dy * t];
+    }
+    remaining -= segLen;
+  }
+  return pts[pts.length - 1].slice();
+}
+
+function animate(duration, onUpdate) {
+  const token = ++animToken;
+  return new Promise(resolve => {
+    const start = performance.now();
+    function frame(now) {
+      if (token !== animToken) { resolve('cancelled'); return; }
+      const t = Math.min((now - start) / duration, 1);
+      try { onUpdate(t); } catch (e) {}
+      if (t < 1) requestAnimationFrame(frame);
+      else resolve('done');
+    }
+    requestAnimationFrame(frame);
+  });
+}
+async function anim(duration, fn) {
+  const status = await animate(duration, fn);
+  if (status === 'cancelled') throw new Error('cancelled');
+}
+
+function makePhoton(x, y, superpos = false) {
+  const el = document.createElementNS(SVG_NS, 'circle');
+  el.setAttribute('r', 5);
+  el.setAttribute('fill', 'url(#photonGrad)');
+  el.setAttribute('filter', 'url(#glow)');
+  el.setAttribute('cx', x);
+  el.setAttribute('cy', y);
+  if (superpos) {
+    el.setAttribute('opacity', 0.55);
+    el.style.animation = 'photonPulse 1s ease-in-out infinite';
+  }
+  photonsLayer.appendChild(el);
+  return el;
+}
+function movePhoton(el, x, y) {
+  el.setAttribute('cx', x);
+  el.setAttribute('cy', y);
+}
+function clearPhotons() {
+  while (photonsLayer.firstChild) photonsLayer.removeChild(photonsLayer.firstChild);
+}
+
+function drawBomb(working) {
+  const d = I18N[currentLang];
+  bombGroup.innerHTML = '';
+  bombGroup.style.display = '';
+  const [x, y] = GEO.bombPos;
+
+  const glow = document.createElementNS(SVG_NS, 'circle');
+  glow.setAttribute('cx', x); glow.setAttribute('cy', y); glow.setAttribute('r', 24);
+  glow.setAttribute('fill', working ? 'rgba(255,68,102,0.13)' : 'rgba(120,120,120,0.10)');
+  glow.id = 'bombGlow';
+  bombGroup.appendChild(glow);
+
+  const body = document.createElementNS(SVG_NS, 'circle');
+  body.setAttribute('cx', x); body.setAttribute('cy', y); body.setAttribute('r', 14);
+  body.setAttribute('fill', working ? '#2a1520' : '#1c1c22');
+  body.setAttribute('stroke', working ? '#ff4466' : '#777');
+  body.setAttribute('stroke-width', '2');
+  bombGroup.appendChild(body);
+
+  const fuse = document.createElementNS(SVG_NS, 'path');
+  fuse.setAttribute('d', `M ${x+7} ${y-11} Q ${x+16} ${y-22} ${x+9} ${y-30}`);
+  fuse.setAttribute('fill', 'none');
+  fuse.setAttribute('stroke', working ? '#ff9944' : '#555');
+  fuse.setAttribute('stroke-width', '2.2');
+  fuse.setAttribute('stroke-linecap', 'round');
+  bombGroup.appendChild(fuse);
+
+  if (working) {
+    const spark = document.createElementNS(SVG_NS, 'circle');
+    spark.setAttribute('cx', x+9); spark.setAttribute('cy', y-30); spark.setAttribute('r', 3);
+    spark.setAttribute('fill', '#ffcc00');
+    spark.setAttribute('filter', 'url(#glow)');
+    spark.style.animation = 'sparkPulse .7s ease-in-out infinite';
+    bombGroup.appendChild(spark);
+  }
+
+  const label = document.createElementNS(SVG_NS, 'text');
+  label.setAttribute('x', x);
+  label.setAttribute('y', y + 34);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('font-size', '10.5');
+  label.setAttribute('font-family', 'inherit');
+  label.setAttribute('fill', working ? '#ff4466' : '#777');
+  label.textContent = working ? d.bombLabelWorking : d.bombLabelDud;
+  bombGroup.appendChild(label);
+}
+function hideBomb() {
+  bombGroup.style.display = 'none';
+  bombGroup.innerHTML = '';
+}
+
+function clearEffects() {
+  while (effectsLayer.firstChild) effectsLayer.removeChild(effectsLayer.firstChild);
+}
+
+function showExplosion(pos) {
+  const [x, y] = pos;
+  const exp = document.createElementNS(SVG_NS, 'circle');
+  exp.setAttribute('cx', x); exp.setAttribute('cy', y); exp.setAttribute('r', 0);
+  exp.setAttribute('fill', 'url(#explosionGrad)');
+  effectsLayer.appendChild(exp);
+
+  const start = performance.now();
+  const DUR = 900;
+  function frame(now) {
+    const t = Math.min((now - start) / DUR, 1);
+    const r = 90 * Math.sin(t * Math.PI);
+    exp.setAttribute('r', r);
+    exp.setAttribute('opacity', 1 - t);
+    if (t < 1) requestAnimationFrame(frame);
+    else exp.remove();
+  }
+  requestAnimationFrame(frame);
+
+  try {
+    diagram.animate([
+      { transform: 'translate(0,0)' },
+      { transform: 'translate(-6px,4px)' },
+      { transform: 'translate(5px,-4px)' },
+      { transform: 'translate(-4px,3px)' },
+      { transform: 'translate(3px,-2px)' },
+      { transform: 'translate(0,0)' },
+    ], { duration: 420, easing: 'ease-out' });
+  } catch (e) {}
+}
+
+function showFlashAt(pos) {
+  const [x, y] = pos;
+  const flash = document.createElementNS(SVG_NS, 'circle');
+  flash.setAttribute('cx', x); flash.setAttribute('cy', y); flash.setAttribute('r', 4);
+  flash.setAttribute('fill', 'url(#flashGrad)');
+  effectsLayer.appendChild(flash);
+
+  const start = performance.now();
+  const DUR = 550;
+  function frame(now) {
+    const t = Math.min((now - start) / DUR, 1);
+    flash.setAttribute('r', 4 + 42 * t);
+    flash.setAttribute('opacity', 1 - t);
+    if (t < 1) requestAnimationFrame(frame);
+    else flash.remove();
+  }
+  requestAnimationFrame(frame);
+}
+
+function flashDetector(which) {
+  const circle = document.getElementById(which === 'bright' ? 'dBrightCircle' : 'dDarkCircle');
+  const cx = 635;
+  const cy = which === 'bright' ? 55 : 145;
+  const color = which === 'bright' ? '#00ff88' : '#ff4466';
+
+  const ring = document.createElementNS(SVG_NS, 'circle');
+  ring.setAttribute('cx', cx); ring.setAttribute('cy', cy); ring.setAttribute('r', 18);
+  ring.setAttribute('fill', 'none');
+  ring.setAttribute('stroke', color);
+  ring.setAttribute('stroke-width', '3');
+  effectsLayer.appendChild(ring);
+
+  const start = performance.now();
+  const DUR = 1000;
+  function frame(now) {
+    const t = Math.min((now - start) / DUR, 1);
+    ring.setAttribute('r', 18 + 30 * t);
+    ring.setAttribute('opacity', 1 - t);
+    if (t < 1) requestAnimationFrame(frame);
+    else ring.remove();
+  }
+  requestAnimationFrame(frame);
+
+  const origFill = '#141b2d';
+  circle.setAttribute('fill', which === 'bright' ? 'rgba(0,255,136,0.45)' : 'rgba(255,68,102,0.45)');
+  setTimeout(() => circle.setAttribute('fill', origFill), 750);
+}
+
+function computeOutcome(scenario) {
+  if (scenario === 'working') {
+    const r = Math.random();
+    if (r < 0.50) return 'explosion';
+    if (r < 0.75) return 'bright';
+    return 'dark';
+  }
+  return 'bright';
+}
+
+function recordResult(scenario, result) {
+  stats.total++;
+  if (result === 'explosion') stats.explosions++;
+  else if (result === 'bright') stats.bright++;
+  else if (result === 'dark') {
+    stats.dark++;
+    if (scenario === 'working') stats.detected++;
+  }
+  updateStatsDisplay();
+}
+
+function updateStatsDisplay() {
+  document.getElementById('statTotal').textContent     = stats.total;
+  document.getElementById('statExplosion').textContent = stats.explosions;
+  document.getElementById('statBright').textContent    = stats.bright;
+  document.getElementById('statDark').textContent      = stats.dark;
+  document.getElementById('statDetected').textContent  = stats.detected;
+}
+
+function showResult(scenario, result) {
+  const d = I18N[currentLang];
+  resultBanner.className = 'show ' + result;
+  let text = '';
+  if (result === 'explosion') {
+    text = d.msgExplosion;
+  } else if (result === 'bright') {
+    if (scenario === 'working') text = d.msgBrightWorking;
+    else if (scenario === 'dud') text = d.msgBrightDud;
+    else text = d.msgBrightNone;
+  } else if (result === 'dark') {
+    text = d.msgDark;
+  }
+  resultBanner.innerHTML = text;
+}
+
+function hideResult() {
+  resultBanner.className = '';
+  resultBanner.innerHTML = '';
+  lastResult = null;
+}
+
+function setUIEnabled(enabled) {
+  isRunning = !enabled;
+  btnFire.disabled = !enabled;
+  btnAuto10.disabled = !enabled;
+  btnAuto100.disabled = !enabled;
+  btnBombNone.disabled = !enabled;
+  btnBombDud.disabled = !enabled;
+  btnBombWorking.disabled = !enabled;
+  speedSlider.disabled = !enabled;
+}
+
+async function runAnimation(scenario) {
+  try {
+    clearPhotons();
+    clearEffects();
+    hideResult();
+    setUIEnabled(false);
+
+    const speedFactor = parseFloat(speedSlider.value) || 1;
+    const speed = BASE_SPEED * speedFactor;
+    const ms = (len) => (len / speed) * 1000;
+
+    const srcPath = [GEO.source, GEO.bs1];
+    const srcLen = polylineLength(srcPath);
+    const p1 = makePhoton(GEO.source[0], GEO.source[1]);
+
+    await anim(ms(srcLen), t => {
+      const [x, y] = pointAtDistance(srcPath, t * srcLen);
+      movePhoton(p1, x, y);
+    });
+    p1.remove();
+
+    const upperPathA = [GEO.bs1, GEO.m1, GEO.bombPos];
+    const lowerPathA = [GEO.bs1, GEO.m2, GEO.lowerMid];
+    const lenA = polylineLength(upperPathA);
+
+    const upperPhoton = makePhoton(GEO.bs1[0], GEO.bs1[1], true);
+    const lowerPhoton = makePhoton(GEO.bs1[0], GEO.bs1[1], true);
+
+    await anim(ms(lenA), t => {
+      const [ux, uy] = pointAtDistance(upperPathA, t * lenA);
+      movePhoton(upperPhoton, ux, uy);
+      const [lx, ly] = pointAtDistance(lowerPathA, t * lenA);
+      movePhoton(lowerPhoton, lx, ly);
+    });
+
+    let upperAlive = true;
+
+    if (scenario === 'working') {
+      await anim(420, t => {
+        const glow = document.getElementById('bombGlow');
+        if (glow) {
+          const s = 1 + 0.35 * Math.sin(t * Math.PI * 5);
+          glow.setAttribute('r', 24 * s);
+          glow.setAttribute('opacity', 0.4 + 0.5 * Math.abs(Math.sin(t * Math.PI * 5)));
+        }
+      });
+
+      const isUpper = Math.random() < 0.5;
+      if (isUpper) {
+        upperPhoton.remove();
+        lowerPhoton.remove();
+        showExplosion(GEO.bombPos);
+        recordResult(scenario, 'explosion');
+        showResult(scenario, 'explosion');
+        lastResult = { scenario, result: 'explosion' };
+        setUIEnabled(true);
+        return;
+      } else {
+        await anim(250, t => {
+          upperPhoton.setAttribute('opacity', 1 - t);
+        });
+        upperPhoton.remove();
+        upperAlive = false;
+
+        lowerPhoton.style.animation = '';
+        lowerPhoton.setAttribute('opacity', 1);
+        showFlashAt(GEO.bombPos);
+      }
+    }
+
+    const upperPathB = [GEO.bombPos, GEO.bs2];
+    const lowerPathB = [GEO.lowerMid, GEO.bs2];
+    const lenB = polylineLength(upperPathB);
+
+    await anim(ms(lenB), t => {
+      if (upperAlive) {
+        const [ux, uy] = pointAtDistance(upperPathB, t * lenB);
+        movePhoton(upperPhoton, ux, uy);
+      }
+      const [lx, ly] = pointAtDistance(lowerPathB, t * lenB);
+      movePhoton(lowerPhoton, lx, ly);
+    });
+
+    let result;
+
+    if (upperAlive) {
+      upperPhoton.remove();
+      lowerPhoton.remove();
+
+      const outPath = [GEO.bs2, GEO.dBright];
+      const outLen = polylineLength(outPath);
+      const outPhoton = makePhoton(GEO.bs2[0], GEO.bs2[1]);
+
+      await anim(ms(outLen), t => {
+        const [x, y] = pointAtDistance(outPath, t * outLen);
+        movePhoton(outPhoton, x, y);
+      });
+      outPhoton.remove();
+      flashDetector('bright');
+      result = 'bright';
+    } else {
+      lowerPhoton.remove();
+
+      const toBright = Math.random() < 0.5;
+      const target = toBright ? GEO.dBright : GEO.dDark;
+      const outPath = [GEO.bs2, target];
+      const outLen = polylineLength(outPath);
+      const outPhoton = makePhoton(GEO.bs2[0], GEO.bs2[1]);
+
+      await anim(ms(outLen), t => {
+        const [x, y] = pointAtDistance(outPath, t * outLen);
+        movePhoton(outPhoton, x, y);
+      });
+      outPhoton.remove();
+      flashDetector(toBright ? 'bright' : 'dark');
+      result = toBright ? 'bright' : 'dark';
+    }
+
+    recordResult(scenario, result);
+    showResult(scenario, result);
+    lastResult = { scenario, result };
+  } catch (e) {
+    if (e.message !== 'cancelled') console.error(e);
+    clearPhotons();
+    clearEffects();
+  } finally {
+    setUIEnabled(true);
+  }
+}
+
+function autoRun(n) {
+  if (isRunning) return;
+  hideResult();
+  for (let i = 0; i < n; i++) {
+    recordResult(currentScenario, computeOutcome(currentScenario));
+  }
+  resultBanner.className = 'show info';
+  resultBanner.innerHTML = I18N[currentLang].msgAuto(n);
+  lastResult = { autoN: n, n };
+  // Небольшой хак: сохраним «autoN», чтобы applyLang мог переписать
+  lastResult = { scenario: null, result: null, n };
+}
+
+function setScenario(s) {
+  currentScenario = s;
+  btnBombNone.classList.toggle('active', s === 'none');
+  btnBombDud.classList.toggle('active', s === 'dud');
+  btnBombWorking.classList.toggle('active', s === 'working');
+
+  if (s === 'none') hideBomb();
+  else drawBomb(s === 'working');
+
+  hideResult();
+}
+
+btnBombNone.addEventListener('click', () => setScenario('none'));
+btnBombDud.addEventListener('click', () => setScenario('dud'));
+btnBombWorking.addEventListener('click', () => setScenario('working'));
+
+btnFire.addEventListener('click', () => {
+  if (isRunning) return;
+  runAnimation(currentScenario);
+});
+
+btnAuto10.addEventListener('click', () => autoRun(10));
+btnAuto100.addEventListener('click', () => autoRun(100));
+
+btnReset.addEventListener('click', () => {
+  animToken++;
+  clearPhotons();
+  clearEffects();
+  hideResult();
+  stats = { total: 0, explosions: 0, bright: 0, dark: 0, detected: 0 };
+  updateStatsDisplay();
+  setUIEnabled(true);
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ИНИЦИАЛИЗАЦИЯ
+   ══════════════════════════════════════════════════════════════════ */
+applyLang(currentLang);
+setScenario('none');
+updateStatsDisplay();
+
+const styleEl = document.createElement('style');
+styleEl.textContent = `
+  @keyframes photonPulse {
+    0%, 100% { opacity: .4; }
+    50%      { opacity: .75; }
+  }
+  @keyframes sparkPulse {
+    0%, 100% { opacity: .5; r: 2.5; }
+    50%      { opacity: 1;  r: 4;   }
+  }
+`;
+document.head.appendChild(styleEl);
+</script>
+</body>
+</html>

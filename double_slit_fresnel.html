@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Две щели: интерференция и детектор пути</title>
+<style>
+:root{--bg:#07080c;--panel:#101319;--line:#232a36;--text:#e7ecf5;--muted:#8b98ab;--blue:#5aa2ff;--amber:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:24px 16px 48px}
+.wrap{width:100%;max-width:1150px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+h1{margin:0;font-size:25px}h2{margin:0 0 10px;font-size:16px}
+.lead{color:var(--muted);margin:8px 0 16px;line-height:1.55;max-width:88ch}
+.lang-switch{display:flex;gap:4px;flex-shrink:0}
+.lang-btn{background:#171d27;color:#8b98ab;border:1px solid #2b3547;border-radius:8px;
+  padding:6px 12px;font-family:ui-monospace,monospace;font-size:12px;font-weight:650;
+  cursor:pointer;transition:all .15s;letter-spacing:.08em}
+.lang-btn:hover{background:#202836;color:#e7ecf5}
+.lang-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+canvas{display:block;width:100%;height:430px;touch-action:none}canvas.front{height:280px}
+.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-top:14px}
+@media(max-width:920px){.layout{grid-template-columns:1fr}canvas{height:340px}}
+.controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.row{margin-bottom:11px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+label{color:#b9c5d6;font-size:13.5px}.val{font-family:ui-monospace,monospace;color:var(--blue);font-weight:650}
+input[type=range]{width:100%;accent-color:var(--blue);height:22px}
+.toggle{display:flex;gap:10px;align-items:center;background:#0c1017;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:12px 0}
+.toggle input{width:20px;height:20px;accent-color:var(--amber)}.toggle span{font-size:14px;color:#e7ecf5}
+.btns{display:flex;gap:9px;margin-top:10px}
+button{flex:1;background:#171d27;color:var(--text);border:1px solid #2b3547;border-radius:10px;padding:10px 12px;font:inherit;font-weight:550;cursor:pointer}
+button:hover{background:#202836}button.primary{background:#2563eb;border-color:#2563eb}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.stat{background:#0c1017;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.stat .v{font-family:ui-monospace,monospace;font-size:16px;font-weight:650;margin-top:3px}
+.note{color:var(--muted);font-size:13.8px;line-height:1.65}.note b{color:var(--text)}
+.formula{margin-top:8px;color:var(--muted);font-family:ui-monospace,monospace;font-size:12px;text-align:center}
+.small{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0}
+.badge{display:inline-block;background:#3f2d0a;color:#fbbf24;border:1px solid #6b4b12;border-radius:999px;padding:4px 12px;font-size:13px;margin-top:8px;font-weight:600}
+.hint{margin-top:8px;font-size:12.5px;color:#7d8ba0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="page-head">
+  <h1 data-i18n="h1">Две щели: детектор пути</h1>
+  <div class="lang-switch">
+    <button class="lang-btn" data-lang="ru">RU</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+  </div>
+</div>
+<p class="lead" data-i18n-html="lead">Переключатель детектора меняет физику: без него складываются <b>амплитуды</b> и появляются интерференционные полосы; с ним складываются <b>интенсивности</b>, и полосы исчезают. Экран можно перетаскивать — модель считает дифракцию Френеля для любого расстояния L.</p>
+
+<div class="card"><canvas id="c"></canvas></div>
+<div class="hint" data-i18n="hintDrag">Перетащите цветную метку экрана в основной схеме, чтобы изменить L.</div>
+
+<div class="layout">
+  <div class="card"><canvas id="front" class="front"></canvas></div>
+  <div class="controls">
+    <h2 data-i18n="frontHead">Экран — вид спереди</h2>
+    <p class="small" data-i18n="frontNote">Горизонталь — поперечная координата x. Каждая точка — одно срабатывание детектора. Без детектора точки собираются в полосы; с детектором — в гладкую дифракционную огибающую.</p>
+    <div id="badge" class="badge" data-i18n="badgeNone">Режим: интерференция</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="controls">
+  <div class="row"><div class="top"><label for="lambda" data-i18n="lambdaLbl">Длина волны λ</label><span class="val" id="lambdaV">550 нм</span></div><input id="lambda" type="range" min="380" max="700" step="1" value="550"></div>
+  <div class="row"><div class="top"><label for="d" data-i18n="dLbl">Расстояние между щелями d</label><span class="val" id="dV">80 мкм</span></div><input id="d" type="range" min="10" max="400" step="1" value="80"></div>
+  <div class="row"><div class="top"><label for="a" data-i18n="aLbl">Ширина каждой щели a</label><span class="val" id="aV">12 мкм</span></div><input id="a" type="range" min="2" max="80" step="1" value="12"></div>
+  <div class="row"><div class="top"><label for="L" data-i18n="LLbl">Расстояние до экрана L</label><span class="val" id="LV">25 мм</span></div><input id="L" type="range" min="1" max="1000" step="1" value="25"></div>
+  <div class="row"><div class="top"><label for="rate" data-i18n="rateLbl">Скорость частиц</label><span class="val" id="rateV">200 частиц/с</span></div><input id="rate" type="range" min="1" max="1000" step="1" value="200"></div>
+
+  <label class="toggle"><input id="which" type="checkbox"><span data-i18n-html="detToggle"><b>Детектор пути</b> — определить, через какую щель прошла частица</span></label>
+
+  <div class="btns">
+    <button id="fire" class="primary" data-i18n="fire">Пуск</button>
+    <button id="pause" data-i18n="pause">Пауза</button>
+    <button id="clear" data-i18n="clear">Очистить экран</button>
+  </div>
+  <div class="formula" data-i18n-html="formula">Без детектора: I = |U₁ + U₂|²<br>С детектором: I = |U₁|² + |U₂|²</div>
+</div>
+
+<div>
+  <div class="stats">
+    <div class="stat"><div class="k" data-i18n="stParticles">Частиц</div><div class="v" id="n">0</div></div>
+    <div class="stat"><div class="k" data-i18n="stDistance">Расстояние L</div><div class="v" id="Lnow">25.0 мм</div></div>
+    <div class="stat"><div class="k" data-i18n="stMode">Режим</div><div class="v" id="mode">Интерференция</div></div>
+  </div>
+  <div class="note" data-i18n-html="note">Что должно измениться при включении детектора: интерференционные полосы исчезают, а экран очищается и начинает заполняться гладкой дифракционной огибающей. В основном графике это видно сразу: вместо частых максимумов остаётся один широкий центральный пик с боковыми лепестками.</div>
+</div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════
+   I18N — ДИКТ
+   ══════════════════════════════════════════════════════════════════ */
+const I18N = {
+  ru: {
+    docTitle: 'Две щели: интерференция и детектор пути',
+    h1: 'Две щели: детектор пути',
+    lead: 'Переключатель детектора меняет физику: без него складываются <b>амплитуды</b> и появляются интерференционные полосы; с ним складываются <b>интенсивности</b>, и полосы исчезают. Экран можно перетаскивать — модель считает дифракцию Френеля для любого расстояния L.',
+    hintDrag: 'Перетащите цветную метку экрана в основной схеме, чтобы изменить L.',
+    frontHead: 'Экран — вид спереди',
+    frontNote: 'Горизонталь — поперечная координата x. Каждая точка — одно срабатывание детектора. Без детектора точки собираются в полосы; с детектором — в гладкую дифракционную огибающую.',
+    badgeNone: 'Режим: интерференция',
+    badgeOn: 'ДЕТЕКТОР ВКЛЮЧЁН: полос нет',
+    badgeOff: 'ДЕТЕКТОР ВЫКЛЮЧЕН: есть полосы',
+    lambdaLbl: 'Длина волны λ',
+    dLbl: 'Расстояние между щелями d',
+    aLbl: 'Ширина каждой щели a',
+    LLbl: 'Расстояние до экрана L',
+    rateLbl: 'Скорость частиц',
+    detToggle: '<b>Детектор пути</b> — определить, через какую щель прошла частица',
+    fire: 'Пуск', pause: 'Пауза', pauseAlt: 'Продолжить', run: 'Идёт',
+    clear: 'Очистить экран',
+    formula: 'Без детектора: I = |U₁ + U₂|²<br>С детектором: I = |U₁|² + |U₂|²',
+    stParticles: 'Частиц',
+    stDistance: 'Расстояние L',
+    stMode: 'Режим',
+    modeInterf: 'Интерференция',
+    modeNoInterf: 'Без интерференции',
+    note: 'Что должно измениться при включении детектора: интерференционные полосы исчезают, а экран очищается и начинает заполняться гладкой дифракционной огибающей. В основном графике это видно сразу: вместо частых максимумов остаётся один широкий центральный пик с боковыми лепестками.',
+    units: { nm: 'нм', um: 'мкм', mm: 'мм', pps: 'частиц/с' },
+    cvSource: 'Источник', cvSlits: 'Щели', cvScreen: 'Экран',
+    cvDetOn: 'ДЕТЕКТОР ВКЛ', cvDetOff: 'ДЕТЕКТОР ВЫКЛ',
+    cvFringes: 'Интерференционные полосы', cvEnvelope: 'Дифракционная огибающая',
+    cvFrontNo: 'Вид спереди: без полос', cvFront: 'Вид спереди: интерференционные полосы'
+  },
+  en: {
+    docTitle: 'Double Slit: Interference & Which-Path Detector',
+    h1: 'Double Slit: which-path detector',
+    lead: 'The detector toggle changes the physics: without it, <b>amplitudes</b> add and interference fringes appear; with it, <b>intensities</b> add and the fringes vanish. The screen can be dragged — the model computes Fresnel diffraction for any distance L.',
+    hintDrag: 'Drag the coloured screen marker in the main diagram to change L.',
+    frontHead: 'Screen — front view',
+    frontNote: 'Horizontal is the transverse coordinate x. Each dot is one detector event. Without the detector, dots cluster into fringes; with the detector, they fill a smooth diffraction envelope.',
+    badgeNone: 'Mode: interference',
+    badgeOn: 'DETECTOR ON: no fringes',
+    badgeOff: 'DETECTOR OFF: fringes present',
+    lambdaLbl: 'Wavelength λ',
+    dLbl: 'Slit separation d',
+    aLbl: 'Slit width a',
+    LLbl: 'Screen distance L',
+    rateLbl: 'Particle rate',
+    detToggle: '<b>Which-path detector</b> — determine which slit the particle went through',
+    fire: 'Fire', pause: 'Pause', pauseAlt: 'Resume', run: 'Running',
+    clear: 'Clear screen',
+    formula: 'Without detector: I = |U₁ + U₂|²<br>With detector: I = |U₁|² + |U₂|²',
+    stParticles: 'Particles',
+    stDistance: 'Distance L',
+    stMode: 'Mode',
+    modeInterf: 'Interference',
+    modeNoInterf: 'No interference',
+    note: 'What should change when the detector is switched on: interference fringes disappear, the screen clears and starts filling with a smooth diffraction envelope. On the main graph it is immediately visible: instead of many maxima, a single broad central peak with side lobes remains.',
+    units: { nm: 'nm', um: 'µm', mm: 'mm', pps: 'particles/s' },
+    cvSource: 'Source', cvSlits: 'Slits', cvScreen: 'Screen',
+    cvDetOn: 'DETECTOR ON', cvDetOff: 'DETECTOR OFF',
+    cvFringes: 'Interference fringes', cvEnvelope: 'Diffraction envelope',
+    cvFrontNo: 'Front view: no fringes', cvFront: 'Front view: interference fringes'
+  }
+};
+
+let currentLang = 'ru';
+(function initLang(){
+  let urlLang = null;
+  try { urlLang = new URLSearchParams(location.search).get('lang'); } catch(e){}
+  const stored = localStorage.getItem('lang');
+  const candidate = (urlLang || stored || 'ru').toLowerCase();
+  currentLang = I18N[candidate] ? candidate : 'ru';
+})();
+
+function applyLang(lang){
+  if (!I18N[lang]) lang = 'ru';
+  currentLang = lang;
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = d.docTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (d[k] != null) el.textContent = d[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if (d[k] != null) el.innerHTML = d[k];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+
+  updateDynamicLabels();
+  try { localStorage.setItem('lang', lang); } catch(e){}
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+// Синхронизация с родительским сайтом через storage-событие
+window.addEventListener('storage', e => {
+  if (e.key === 'lang' && e.newValue && I18N[e.newValue] && e.newValue !== currentLang) {
+    applyLang(e.newValue);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ОРИГИНАЛЬНАЯ ЛОГИКА (физика не тронута)
+   ══════════════════════════════════════════════════════════════════ */
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const cvF=document.getElementById('front'),ctxF=cvF.getContext('2d');
+const els={lambda:document.getElementById('lambda'),d:document.getElementById('d'),a:document.getElementById('a'),L:document.getElementById('L'),rate:document.getElementById('rate'),which:document.getElementById('which')};
+const outs={lambda:document.getElementById('lambdaV'),d:document.getElementById('dV'),a:document.getElementById('aV'),L:document.getElementById('LV'),rate:document.getElementById('rateV'),Lnow:document.getElementById('Lnow'),mode:document.getElementById('mode'),n:document.getElementById('n')};
+const badge=document.getElementById('badge');
+const bFire=document.getElementById('fire'),bPause=document.getElementById('pause'),bClear=document.getElementById('clear');
+
+let W=900,H=430,WF=700,HF=280,dpr=1,hits=[],running=false,acc=0,last=0,time=0;
+let profile=new Float64Array(1),xMin=-1e-3,xMax=1e-3,profileMax=1;
+const P={lambda:550e-9,d:80e-6,a:12e-6,L:25e-3,rate:200,which:false};
+
+function color(nm){let r=0,g=0,b=0;
+ if(nm<440){r=-(nm-440)/60;b=1}else if(nm<490){g=(nm-440)/50;b=1}else if(nm<510){g=1;b=-(nm-510)/20}else if(nm<580){r=(nm-510)/70;g=1}else if(nm<645){r=1;g=-(nm-645)/65}else r=1;
+ return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];}
+function rgba(c,a){return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
+
+function apertureAll(x){const h=P.d/2;return (Math.abs(x-h)<=P.a/2||Math.abs(x+h)<=P.a/2)?1:0;}
+function apertureTop(x){return Math.abs(x-P.d/2)<=P.a/2?1:0;}
+function apertureBottom(x){return Math.abs(x+P.d/2)<=P.a/2?1:0;}
+
+function fresnel(aperture,x1min,x1max,x2min,x2max,N2,N1){
+ const lam=P.lambda,L=Math.max(P.L,1e-6),k=2*Math.PI/lam;
+ const dx1=(x1max-x1min)/N1,dx2=(x2max-x2min)/N2;
+ const out=new Float64Array(N2);
+ const xs=[],ts=[];
+ for(let i=0;i<N1;i++){const x1=x1min+(i+.5)*dx1;xs.push(x1);ts.push(aperture(x1));}
+ const coeff=1/(lam*L);
+ for(let j=0;j<N2;j++){
+  const x2=x2min+(j+.5)*dx2;let re=0,im=0;
+  for(let i=0;i<N1;i++){
+   if(!ts[i])continue;
+   const dx=x2-xs[i],ph=k*dx*dx/(2*L);
+   re+=Math.cos(ph);im+=Math.sin(ph);
+  }
+  out[j]=(re*re+im*im)*coeff*coeff*dx1*dx1;
+ }
+ return out;
+}
+
+function computeProfile(){
+ const N2=720,N1=400;
+ const fringe=P.lambda*P.L/P.d;
+ const envelope=P.lambda*P.L/P.a;
+ const half=P.which
+   ? Math.min(Math.max(4*envelope,10*P.a),0.05)
+   : Math.min(Math.max(7*fringe,3*envelope*0.25,20e-6),0.05);
+ xMin=-half;xMax=half;
+ let arr,m=0;
+ if(P.which){
+  const A=fresnel(apertureTop,-P.d/2-P.a/2,P.d/2+P.a/2,xMin,xMax,N2,N1);
+  const B=fresnel(apertureBottom,-P.d/2-P.a/2,P.d/2+P.a/2,xMin,xMax,N2,N1);
+  arr=new Float64Array(N2);
+  for(let i=0;i<N2;i++){arr[i]=A[i]+B[i];if(arr[i]>m)m=arr[i];}
+ }else{
+  arr=fresnel(apertureAll,-P.d/2-P.a/2,P.d/2+P.a/2,xMin,xMax,N2,N1);
+  for(let i=0;i<N2;i++)if(arr[i]>m)m=arr[i];
+ }
+ profile=arr;profileMax=m||1;
+}
+
+function sampleX(){
+ const N=profile.length;
+ for(let i=0;i<200;i++){
+  const j=(Math.random()*N)|0,x=xMin+(j+.5)*(xMax-xMin)/N;
+  if(Math.random()<profile[j]/profileMax)return x;
+ }
+ const j=(Math.random()*N)|0;return xMin+(j+.5)*(xMax-xMin)/N;
+}
+
+function geom(){
+ const barrierX=W*.20,screenX=W*.68,cy=H*.52;
+ const halfM=xMax,screenHalfPx=H*.40,pxPerM=screenHalfPx/halfM;
+ const barrierPxPerMicron=Math.min(1.0,H*.32/400);
+ return{barrierX,screenX,cy,halfM,pxPerM,barrierPxPerMicron,screenHalfPx};
+}
+
+function drawWaves(g,rgb){
+ const gapPx=P.d*1e6*g.barrierPxPerMicron;
+ const lamPx=Math.max(8,Math.min(34,100*P.lambda*1e9/550));
+ ctx.save();
+ ctx.globalCompositeOperation='screen';
+ ctx.lineCap='round';
+ [g.cy-gapPx/2,g.cy+gapPx/2].forEach(function(sy){
+  for(let r=lamPx;r<g.screenX-g.barrierX;r+=lamPx){
+   const a=.09*(1-r/(g.screenX-g.barrierX+40));if(a<=0)continue;
+   ctx.strokeStyle=rgba(rgb,a);
+   ctx.lineWidth=1.0;
+   ctx.beginPath();
+   ctx.arc(g.barrierX,sy,r,-Math.PI/2,Math.PI/2);
+   ctx.stroke();
+  }
+ });
+ ctx.restore();
+}
+
+function draw(){
+ const d = I18N[currentLang];
+ ctx.clearRect(0,0,W,H);
+ const bg=ctx.createLinearGradient(0,0,W,0);bg.addColorStop(0,'#05070c');bg.addColorStop(1,'#0a0f18');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ const g=geom(),rgb=color(P.lambda/1e9);
+ drawWaves(g,rgb);
+
+ const gapPx=P.d*1e6*g.barrierPxPerMicron;
+ const slitPx=Math.max(2.5,P.a*1e6*g.barrierPxPerMicron);
+ ctx.fillStyle='#1b2331';ctx.fillRect(g.barrierX-6,0,12,H);
+ ctx.fillStyle='#05070c';
+ [g.cy-gapPx/2,g.cy+gapPx/2].forEach(function(y){ctx.fillRect(g.barrierX-7,y-slitPx/2,14,slitPx);});
+
+ ctx.fillStyle='#fde68a';ctx.beginPath();ctx.arc(36,g.cy,6.5,0,6.283);ctx.fill();
+ ctx.fillStyle='#8b98ab';ctx.font='12px Inter,system-ui';ctx.textAlign='center';
+ ctx.fillText(d.cvSource,36,g.cy+26);
+ ctx.fillText(d.cvSlits,g.barrierX,g.cy+H*.45);
+
+ ctx.fillStyle='#151b26';ctx.fillRect(g.screenX-4,0,8,H);
+ ctx.fillStyle=P.which?'#7dd3fc':'#fbbf24';ctx.fillRect(g.screenX-4,g.cy-16,8,32);
+ ctx.fillStyle='#e7ecf5';ctx.font='11px ui-monospace,monospace';
+ ctx.fillText((P.L*1e3).toFixed(1)+' '+d.units.mm,g.screenX,g.cy+34);
+ ctx.fillStyle=P.which?'#7dd3fc':'#fbbf24';ctx.font='bold 12px Inter,system-ui';
+ ctx.fillText(P.which?d.cvDetOn:d.cvDetOff,g.screenX,24);
+
+ hits.forEach(function(h){
+  const y=h.sy;
+  if(y<8||y>H-8)return;
+  ctx.fillStyle=rgba(rgb,.8);ctx.beginPath();ctx.arc(g.screenX,y,1.35,0,6.283);ctx.fill();
+ });
+
+ const graphX=g.screenX+16,graphW=Math.max(45,W-graphX-20),top=42,h=H-84;
+ ctx.strokeStyle='rgba(139,152,171,.25)';ctx.beginPath();ctx.moveTo(graphX,top);ctx.lineTo(graphX,top+h);ctx.stroke();
+ ctx.beginPath();
+ const N=profile.length;
+ for(let i=0;i<N;i++){
+  const I=Math.min(profile[i]/profileMax,1);
+  const y=top+h*(1-I),px=graphX+graphW*i/(N-1);
+  if(i)ctx.lineTo(px,y);else ctx.moveTo(px,y);
+ }
+ ctx.strokeStyle=rgba(rgb,1);ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle='#8b98ab';ctx.font='11px ui-monospace,monospace';ctx.textAlign='left';
+ ctx.fillText(P.which?d.cvEnvelope:d.cvFringes,graphX,top-10);
+}
+
+function drawFront(){
+ const d = I18N[currentLang];
+ ctxF.clearRect(0,0,WF,HF);
+ ctxF.fillStyle='#05070c';ctxF.fillRect(0,0,WF,HF);
+ const rgb=color(P.lambda/1e9);
+ hits.forEach(function(h){
+  const px=WF/2 + h.sx*(WF/2-12);
+  const py=HF/2 - h.y*(HF/2-9);
+  if(px<5||px>WF-5)return;
+  ctxF.fillStyle=rgba(rgb,.55);ctxF.beginPath();ctxF.arc(px,py,1.1,0,6.283);ctxF.fill();
+ });
+ ctxF.strokeStyle='rgba(139,152,171,.25)';ctxF.beginPath();ctxF.moveTo(WF/2,8);ctxF.lineTo(WF/2,HF-22);ctxF.stroke();
+ ctxF.fillStyle='#8b98ab';ctxF.font='11px ui-monospace,monospace';ctxF.textAlign='center';
+ ctxF.fillText('-x',16,HF-7);ctxF.fillText('0',WF/2,HF-7);ctxF.fillText('+x',WF-18,HF-7);
+ ctxF.textAlign='left';ctxF.fillText(P.which?d.cvFrontNo:d.cvFront,12,18);
+}
+
+function emit(n){
+ const g=geom();
+ for(let i=0;i<n;i++){
+  const x=sampleX();
+  hits.push({
+   x: x,
+   y: (Math.random()*2-1)*.96,
+   sy: g.cy - x*g.pxPerM,
+   sx: x/g.halfM
+  });
+  if(hits.length>20000)hits.shift();
+ }
+ outs.n.textContent=hits.length;
+}
+function update(dt){
+ time+=dt;
+ if(running){acc+=P.rate*dt;const n=Math.floor(acc);acc-=n;if(n)emit(n);}
+}
+
+/* Обновление только динамических строк (без пересчёта физики) */
+function updateDynamicLabels(){
+ const d = I18N[currentLang], U = d.units;
+ outs.lambda.textContent = els.lambda.value + ' ' + U.nm;
+ outs.d.textContent      = els.d.value      + ' ' + U.um;
+ outs.a.textContent      = els.a.value      + ' ' + U.um;
+ outs.L.textContent      = (+els.L.value).toFixed(0) + ' ' + U.mm;
+ outs.Lnow.textContent   = (P.L*1e3).toFixed(1)      + ' ' + U.mm;
+ outs.rate.textContent   = els.rate.value   + ' ' + U.pps;
+ outs.mode.textContent   = P.which ? d.modeNoInterf : d.modeInterf;
+ badge.textContent       = P.which ? d.badgeOn : d.badgeOff;
+}
+
+function refresh(){
+ P.lambda=+els.lambda.value*1e-9;P.d=+els.d.value*1e-6;P.a=+els.a.value*1e-6;P.L=+els.L.value*1e-3;P.rate=+els.rate.value;
+ updateDynamicLabels();
+ computeProfile();
+}
+
+function applyDetector(){
+ P.which=els.which.checked;
+ updateDynamicLabels();
+ badge.style.background=P.which?'#0d2a49':'#3f2d0a';
+ badge.style.color=P.which?'#7dd3fc':'#fbbf24';
+ badge.style.borderColor=P.which?'#1e4b7a':'#6b4b12';
+ hits=[];acc=0;outs.n.textContent='0';
+ computeProfile();
+}
+
+Object.keys(els).forEach(function(k){
+  els[k].addEventListener('input',function(){
+    if(k==='which')applyDetector();else refresh();
+  });
+});
+
+bFire.addEventListener('click',function(){
+  running=true;
+  const d=I18N[currentLang];
+  bFire.textContent=d.run;
+  bPause.textContent=d.pause;
+});
+bPause.addEventListener('click',function(){
+  running=!running;
+  const d=I18N[currentLang];
+  bPause.textContent=running?d.pause:d.pauseAlt;
+  bFire.textContent=running?d.run:d.fire;
+});
+bClear.addEventListener('click',function(){hits=[];acc=0;outs.n.textContent='0';});
+
+let dragging=false;
+function setLFromPointer(clientX){
+ const r=cv.getBoundingClientRect(),g=geom();
+ const x=clientX-r.left;
+ const t=Math.min(Math.max((x-g.barrierX)/(W*.94-g.barrierX),0),1);
+ P.L=1e-3*Math.pow(1000,t);
+ els.L.value=Math.round(P.L*1e3);
+ refresh();
+}
+cv.addEventListener('pointerdown',function(e){
+ const g=geom();
+ if(Math.abs(e.offsetX-g.screenX)<25){dragging=true;cv.setPointerCapture(e.pointerId);setLFromPointer(e.clientX);}
+});
+cv.addEventListener('pointermove',function(e){if(dragging)setLFromPointer(e.clientX);});
+window.addEventListener('pointerup',function(){dragging=false;});
+
+function resize(){
+ dpr=Math.min(window.devicePixelRatio||1,2);
+ const r=cv.getBoundingClientRect();W=r.width||900;H=r.height||430;
+ cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+ const rf=cvF.getBoundingClientRect();WF=rf.width||700;HF=rf.height||280;
+ cvF.width=WF*dpr;cvF.height=HF*dpr;ctxF.setTransform(dpr,0,0,dpr,0,0);
+ computeProfile();
+}
+window.addEventListener('resize',resize);
+
+/* ── СТАРТ ── */
+refresh();
+applyDetector();
+resize();
+applyLang(currentLang);
+
+function loop(ts){
+ if(!last)last=ts;
+ const dt=Math.min((ts-last)/1000,.05);last=ts;
+ update(dt);draw();drawFront();
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
