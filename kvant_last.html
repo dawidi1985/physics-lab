@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Квантовый ластик с отложенным выбором — интерактивная модель</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 800px at 50% -10%,#16213a 0%,#080b12 55%,#05070b 100%);
+    color:#dbe4f0;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    min-height:100vh;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 18px 64px}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:clamp(19px,2.6vw,28px);margin:0 0 6px;letter-spacing:-.02em;font-weight:650}
+  .sub{margin:0;color:#8296b0;font-size:14px}
+  .lang-switch{display:flex;gap:4px;flex-shrink:0}
+  .lang-btn{
+    appearance:none;background:#101724;color:#8fa3bd;border:1px solid #243044;
+    font:inherit;font-size:12px;font-weight:650;letter-spacing:.08em;
+    padding:6px 12px;border-radius:8px;cursor:pointer;transition:.15s;
+    font-family:ui-monospace,monospace
+  }
+  .lang-btn:hover{background:#1a2536;color:#cfe0f5;border-color:#3a4c68}
+  .lang-btn.active{background:#1a2b3f;border-color:#4fc3ff;color:#bfe9ff;box-shadow:0 0 0 1px rgba(79,195,255,.25)}
+  .card{
+    background:linear-gradient(180deg,rgba(22,30,46,.92),rgba(12,17,26,.92));
+    border:1px solid #1e2a3d;border-radius:16px;padding:14px;margin-top:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  canvas{display:block;width:100%;border-radius:10px}
+  #scene{aspect-ratio:900/570;background:#070a10}
+  #screen{aspect-ratio:900/300;background:#070a10}
+
+  .bar{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+  .ctl{display:flex;flex-direction:column;gap:7px}
+  .ctl.grow{flex:1;min-width:180px}
+  .lbl{font-size:12px;color:#8296b0;letter-spacing:.02em}
+  .lbl b{color:#dbe4f0}
+  .btn{
+    appearance:none;border:1px solid #2a3547;background:#141c2a;
+    color:#cfdcee;font:inherit;font-size:13px;font-weight:550;
+    padding:9px 15px;border-radius:10px;cursor:pointer;transition:.15s;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{background:#1b2536;border-color:#3a4c68}
+  .btn:active{transform:translateY(1px)}
+  .btn.on{background:rgba(79,195,255,.12);border-color:#3d8fc4;color:#a8e2ff}
+  .btn.on i{width:8px;height:8px;border-radius:50%;background:#4fc3ff;box-shadow:0 0 10px #4fc3ff}
+  .btn.off{background:rgba(255,120,120,.08);border-color:#6b3030;color:#ffb0b0}
+  .btn.off i{width:8px;height:8px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 10px #ff6b6b}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;
+    background:linear-gradient(90deg,#4fc3ff,#2a4a6a);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:#dff4ff;border:2px solid #4fc3ff;cursor:pointer;box-shadow:0 0 10px rgba(79,195,255,.7)
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:#dff4ff;border:2px solid #4fc3ff;cursor:pointer
+  }
+
+  .chead{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .chead h2{font-size:14px;margin:0;font-weight:600;color:#cfdcee;letter-spacing:.01em}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .filters button{
+    appearance:none;border:1px solid #243044;background:#101724;color:#8fa3bd;
+    font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.15s;
+  }
+  .filters button:hover{border-color:#3a4c68;color:#cfe0f5}
+  .filters button.active{background:#1a2b3f;border-color:#4fc3ff;color:#bfe9ff;box-shadow:0 0 0 1px rgba(79,195,255,.25)}
+  .filters button[data-f="1"].active{border-color:#4fc3ff;color:#4fc3ff}
+  .filters button[data-f="2"].active{border-color:#ff6fb5;color:#ff6fb5}
+  .filters button[data-f="3"].active{border-color:#ffcc55;color:#ffcc55}
+  .filters button[data-f="4"].active{border-color:#7ee08a;color:#7ee08a}
+  .filters button[data-f="12"].active{border-color:#b18cff;color:#b18cff}
+  .filters button.dim{opacity:.35}
+
+  .hint{margin-top:10px;font-size:13px;color:#8fa3bd;line-height:1.5;min-height:40px}
+  .hint b{color:#cfe6ff;font-weight:600}
+  .cap{font-size:12.5px;color:#7b8ea6;line-height:1.55;margin:10px 4px 2px}
+  .cap b{color:#a9bdd6}
+  .stats{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#7b8ea6;margin-top:8px}
+  .stats b{color:#cfdcee;font-weight:600}
+  @media (max-width:640px){
+    .bar{gap:12px}
+    .wrap{padding:18px 12px 40px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-head">
+    <header>
+      <h1 data-i18n="h1">Квантовый ластик с отложенным выбором</h1>
+      <p class="sub" data-i18n="sub">Интерактивная модель эксперимента Кима, Кулака, Шиха и др. (1999)</p>
+    </header>
+    <div class="lang-switch">
+      <button class="lang-btn" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </div>
+
+  <div class="card bar">
+    <div class="ctl">
+      <span class="lbl" data-i18n="eraserLbl">Светоделитель-ластик</span>
+      <button id="eraserBtn" class="btn on"><i></i><span id="eraserTxt">Вставлен</span></button>
+    </div>
+    <div class="ctl grow">
+      <span class="lbl"><span data-i18n="rateLbl">Поток пар:</span> <b id="rateVal">80</b> <span data-i18n="rateUnit">/с</span></span>
+      <input id="rate" type="range" min="1" max="400" value="80">
+    </div>
+    <div class="ctl">
+      <span class="lbl">&nbsp;</span>
+      <div style="display:flex;gap:8px">
+        <button id="pauseBtn" class="btn" data-i18n="pause">Пауза</button>
+        <button id="clearBtn" class="btn" data-i18n="clear">Очистить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <canvas id="scene"></canvas>
+    <p class="cap" data-i18n-html="caption">
+      Сигнальный фотон из <b>BBO-кристалла</b> летит к экрану <b>D₀</b> и регистрируется там.
+      Запутанный с ним <b>идлер</b> идёт к детекторам <b>D₁–D₄</b> и приходит <b>позже</b>.
+      Вставить светоделитель-ластик можно уже после того, как сигнал зарегистрирован, —
+      но картина на D₀ от этого не меняется. Интерференция проявляется только в
+      <b>совпадениях</b>, когда события сортируют по тому, какой детектор поймал идлер.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="chead">
+      <h2 data-i18n="screenHead">Экран D₀ — накопление отсчётов</h2>
+      <div class="filters" id="filters">
+        <button data-f="all" class="active"><span data-i18n="filterAll">Все</span></button>
+        <button data-f="1">D1</button>
+        <button data-f="2">D2</button>
+        <button data-f="3">D3</button>
+        <button data-f="4">D4</button>
+        <button data-f="12">D1+D2</button>
+      </div>
+    </div>
+    <canvas id="screen"></canvas>
+    <div class="hint" id="hint"></div>
+    <div class="stats">
+      <span><span data-i18n="stPairs">Пар:</span> <b id="stTotal">0</b></span>
+      <span style="color:#4fc3ff">D1: <b id="st1" style="color:#4fc3ff">0</b></span>
+      <span style="color:#ff6fb5">D2: <b id="st2" style="color:#ff6fb5">0</b></span>
+      <span style="color:#ffcc55">D3: <b id="st3" style="color:#ffcc55">0</b></span>
+      <span style="color:#7ee08a">D4: <b id="st4" style="color:#7ee08a">0</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   I18N
+   ═══════════════════════════════════════════════════════════ */
+const I18N = {
+  ru: {
+    docTitle: 'Квантовый ластик с отложенным выбором — интерактивная модель',
+    h1: 'Квантовый ластик с отложенным выбором',
+    sub: 'Интерактивная модель эксперимента Кима, Кулака, Шиха и др. (1999)',
+    eraserLbl: 'Светоделитель-ластик',
+    eraserInserted: 'Вставлен',
+    eraserRemoved: 'Убран',
+    rateLbl: 'Поток пар:',
+    rateUnit: '/с',
+    pause: 'Пауза',
+    resume: 'Продолжить',
+    clear: 'Очистить',
+    screenHead: 'Экран D₀ — накопление отсчётов',
+    filterAll: 'Все',
+    stPairs: 'Пар:',
+    caption: 'Сигнальный фотон из <b>BBO-кристалла</b> летит к экрану <b>D₀</b> и регистрируется там. Запутанный с ним <b>идлер</b> идёт к детекторам <b>D₁–D₄</b> и приходит <b>позже</b>. Вставить светоделитель-ластик можно уже после того, как сигнал зарегистрирован, — но картина на D₀ от этого не меняется. Интерференция проявляется только в <b>совпадениях</b>, когда события сортируют по тому, какой детектор поймал идлер.',
+    hints: {
+      all:  'Все сигнальные фотоны: полосы <b>не видны</b> — остаётся только суммарная огибающая. Именно это и наблюдают, если не сортировать события по идлеру.',
+      '1':  'Совпадения с <b>D₁</b>: путь стёрт — на экране проступают <b>интерференционные полосы</b>.',
+      '2':  'Совпадения с <b>D₂</b>: тоже полосы, но <b>в противофазе</b> к D₁.',
+      '3':  'Совпадения с <b>D₃</b>: детектор «знает» щель — <b>полос нет</b>.',
+      '4':  'Совпадения с <b>D₄</b>: аналогично D₃ — <b>полос нет</b>.',
+      '12': 'Сумма <b>D₁ + D₂</b>: полосы гасят друг друга — <b>снова нет интерференции</b>.'
+    },
+    hintNoEraser12: 'Светоделитель убран: идлеры в <b>D₁</b> и <b>D₂</b> не попадают, новых совпадений нет.',
+    hintNoEraser:   'Светоделитель убран: идлеры летят только в <b>D₃</b>/<b>D₄</b>. Информация о том, через какую щель прошёл фотон, сохранена — <b>интерференции нет ни в одной выборке</b>.',
+    cv: {
+      laser: 'лазер',
+      bbo: 'BBO',
+      prism: 'призма',
+      eraserBS: 'BS ластика',
+      whichPathInfo: 'информация о пути'
+    }
+  },
+  en: {
+    docTitle: 'Delayed-Choice Quantum Eraser — interactive model',
+    h1: 'Delayed-Choice Quantum Eraser',
+    sub: 'Interactive model of the experiment by Kim, Kulik, Shih et al. (1999)',
+    eraserLbl: 'Eraser beamsplitter',
+    eraserInserted: 'Inserted',
+    eraserRemoved: 'Removed',
+    rateLbl: 'Pair rate:',
+    rateUnit: '/s',
+    pause: 'Pause',
+    resume: 'Resume',
+    clear: 'Clear',
+    screenHead: 'Screen D₀ — accumulated counts',
+    filterAll: 'All',
+    stPairs: 'Pairs:',
+    caption: 'The signal photon from the <b>BBO crystal</b> flies to screen <b>D₀</b> where it is registered. The entangled <b>idler</b> travels to detectors <b>D₁–D₄</b> and arrives <b>later</b>. The eraser beamsplitter can be inserted even after the signal has been registered — but the pattern on D₀ does not change. Interference appears only in <b>coincidences</b>, when events are sorted by which detector caught the idler.',
+    hints: {
+      all:  'All signal photons: fringes are <b>not visible</b> — only the overall envelope remains. This is exactly what is observed without sorting events by idler.',
+      '1':  'Coincidences with <b>D₁</b>: the path is erased — <b>interference fringes</b> appear on screen.',
+      '2':  'Coincidences with <b>D₂</b>: fringes too, but <b>out of phase</b> with D₁.',
+      '3':  'Coincidences with <b>D₃</b>: the detector “knows” the slit — <b>no fringes</b>.',
+      '4':  'Coincidences with <b>D₄</b>: same as D₃ — <b>no fringes</b>.',
+      '12': 'Sum of <b>D₁ + D₂</b>: fringes cancel each other out — <b>no interference again</b>.'
+    },
+    hintNoEraser12: 'Eraser beamsplitter removed: idlers do not reach <b>D₁</b> or <b>D₂</b>, no new coincidences.',
+    hintNoEraser:   'Eraser beamsplitter removed: idlers fly only to <b>D₃</b>/<b>D₄</b>. Which-path information is preserved — <b>no interference in any subset</b>.',
+    cv: {
+      laser: 'laser',
+      bbo: 'BBO',
+      prism: 'prism',
+      eraserBS: 'Eraser BS',
+      whichPathInfo: 'which-path info'
+    }
+  }
+};
+
+let currentLang = 'ru';
+(function initLang(){
+  let urlLang = null;
+  try { urlLang = new URLSearchParams(location.search).get('lang'); } catch(e){}
+  const stored = localStorage.getItem('lang');
+  const candidate = (urlLang || stored || 'ru').toLowerCase();
+  currentLang = I18N[candidate] ? candidate : 'ru';
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   КОНСТАНТЫ
+   ═══════════════════════════════════════════════════════════ */
+const SCENE_W = 900, SCENE_H = 570;
+const SCR_W   = 900, SCR_H   = 300, SS = 2;
+const NBINS   = 100;
+const SIGMA   = 0.40;
+const LAMBDA  = 0.13;
+
+const COLORS = {
+  all:'#b9c8dd', '1':'#4fc3ff', '2':'#ff6fb5', '3':'#ffcc55', '4':'#7ee08a', '12':'#b18cff'
+};
+
+const PT = {
+  crystal:{x:268,y:250},
+  prism:  {x:450,y:305},
+  prismOut:{x:450,y:320},
+  bsa:{x:330,y:375}, bsb:{x:570,y:375},
+  ebs:{x:450,y:450},
+  d1:{x:390,y:525}, d2:{x:510,y:525},
+  d3:{x:238,y:450}, d4:{x:662,y:450}
+};
+
+/* ═══════════════════════════════════════════════════════════
+   СОСТОЯНИЕ
+   ═══════════════════════════════════════════════════════════ */
+const state = {
+  running: true,
+  rate: 80,
+  eraser: true,
+  filter: 'all',
+  total: 0,
+  counts: {1:0,2:0,3:0,4:0}
+};
+
+/* ═══════════════════════════════════════════════════════════
+   БИНЫ
+   ═══════════════════════════════════════════════════════════ */
+const binKeys = ['all','1','2','3','4','12'];
+const bins = {};
+binKeys.forEach(k => bins[k] = new Float32Array(NBINS));
+
+/* ═══════════════════════════════════════════════════════════
+   СЛОИ
+   ═══════════════════════════════════════════════════════════ */
+function makeLayer(){
+  const c = document.createElement('canvas');
+  c.width = SCR_W*SS; c.height = SCR_H*SS;
+  return c;
+}
+const layers = {}, layerCtx = {};
+binKeys.forEach(k => {
+  layers[k] = makeLayer();
+  layerCtx[k] = layers[k].getContext('2d');
+  layerCtx[k].globalAlpha = 0.78;
+  layerCtx[k].fillStyle = COLORS[k];
+});
+
+/* ═══════════════════════════════════════════════════════════
+   DOM
+   ═══════════════════════════════════════════════════════════ */
+const sceneCv  = document.getElementById('scene');
+const sctx     = sceneCv.getContext('2d');
+const scrCv    = document.getElementById('screen');
+const dctx     = scrCv.getContext('2d');
+const hintEl   = document.getElementById('hint');
+const rateEl   = document.getElementById('rate');
+const rateVal  = document.getElementById('rateVal');
+const pauseBtn = document.getElementById('pauseBtn');
+const clearBtn = document.getElementById('clearBtn');
+const eraserBtn= document.getElementById('eraserBtn');
+const eraserTxt= document.getElementById('eraserTxt');
+const filtersEl= document.getElementById('filters');
+const stEls = {
+  total: document.getElementById('stTotal'),
+  1: document.getElementById('st1'), 2: document.getElementById('st2'),
+  3: document.getElementById('st3'), 4: document.getElementById('st4')
+};
+
+/* ═══════════════════════════════════════════════════════════
+   РАЗМЕРЫ
+   ═══════════════════════════════════════════════════════════ */
+function fitScene(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = sceneCv.clientWidth || 900;
+  const h = w * SCENE_H / SCENE_W;
+  sceneCv.width  = Math.max(1, Math.round(w*dpr));
+  sceneCv.height = Math.max(1, Math.round(h*dpr));
+  const s = (w/SCENE_W)*dpr;
+  sctx.setTransform(s,0,0,s,0,0);
+}
+function fitScreen(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = scrCv.clientWidth || 900;
+  const h = w * SCR_H / SCR_W;
+  scrCv.width  = Math.max(1, Math.round(w*dpr));
+  scrCv.height = Math.max(1, Math.round(h*dpr));
+  const s = (w/SCR_W)*dpr;
+  dctx.setTransform(s,0,0,s,0,0);
+}
+if (window.ResizeObserver){
+  const ro = new ResizeObserver(() => { fitScene(); fitScreen(); });
+  ro.observe(sceneCv); ro.observe(scrCv);
+}
+window.addEventListener('resize', () => { fitScene(); fitScreen(); });
+
+/* ═══════════════════════════════════════════════════════════
+   ФИЗИКА
+   ═══════════════════════════════════════════════════════════ */
+function gaussRand(){
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+}
+
+function samplePair(){
+  const d = state.eraser
+    ? 1 + ((Math.random()*4)|0)
+    : 3 + ((Math.random()*2)|0);
+
+  let x;
+  if (d === 1 || d === 2){
+    const sign = (d === 1) ? 1 : -1;
+    for(;;){
+      x = gaussRand()*SIGMA;
+      if (Math.abs(x) > 0.98) continue;
+      const p = 0.5 * (1 + sign*Math.cos(2*Math.PI*x/LAMBDA));
+      if (Math.random() < p) break;
+    }
+  } else {
+    for(;;){
+      x = gaussRand()*SIGMA;
+      if (Math.abs(x) <= 0.98) break;
+    }
+  }
+  return {x, d};
+}
+
+/* ═══════════════════════════════════════════════════════════
+   НАКОПЛЕНИЕ
+   ═══════════════════════════════════════════════════════════ */
+const SZ = 2.4;
+function addDot(u, d){
+  const X = (u+1)*0.5 * (SCR_W*SS);
+  const Y = Math.random() * (SCR_H*SS);
+  const keys = ['all', String(d)];
+  if (d === 1 || d === 2) keys.push('12');
+
+  for (const k of keys){
+    layerCtx[k].fillRect(X - SZ/2, Y - SZ/2, SZ, SZ);
+  }
+
+  const bi = Math.max(0, Math.min(NBINS-1, Math.floor((u+1)*0.5*NBINS)));
+  bins[String(d)][bi]++;
+  bins.all[bi]++;
+  if (d === 1 || d === 2) bins['12'][bi]++;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   АНИМАЦИЯ ФОТОНОВ
+   ═══════════════════════════════════════════════════════════ */
+const photons = [];
+const flashes = [];
+
+function cumLengths(pts){
+  const cum = [0];
+  for (let i=1;i<pts.length;i++){
+    cum.push(cum[i-1] + Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y));
+  }
+  return cum;
+}
+function pointAt(pts, cum, total, p){
+  const d = p*total;
+  for (let i=1;i<pts.length;i++){
+    if (d <= cum[i]){
+      const seg = (cum[i]-cum[i-1]) || 1;
+      const t = (d - cum[i-1]) / seg;
+      return {
+        x: pts[i-1].x + (pts[i].x-pts[i-1].x)*t,
+        y: pts[i-1].y + (pts[i].y-pts[i-1].y)*t
+      };
+    }
+  }
+  return pts[pts.length-1];
+}
+function makePhoton(pts, speed, delay, kind, onDone){
+  const cum = cumLengths(pts);
+  const total = cum[cum.length-1];
+  return { pts, cum, total, dur: total/speed, delay, t: 0, kind, onDone };
+}
+
+const glowBlue = makeGlow('#bfe9ff', '#4fc3ff');
+const glowGold = makeGlow('#ffe6b8', '#ffb45c');
+function makeGlow(inner, outer){
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(16,16,0,16,16,16);
+  gr.addColorStop(0, inner);
+  gr.addColorStop(0.25, outer);
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr;
+  g.beginPath(); g.arc(16,16,16,0,Math.PI*2); g.fill();
+  return c;
+}
+
+function emitPair(){
+  const {x, d} = samplePair();
+  state.total++;
+  state.counts[d]++;
+  addDot(x, d);
+
+  if (photons.length > 260) return;
+
+  const yLand = 140 + x*100;
+  const sigPts = [ {x:268,y:250}, {x:818,y:yLand} ];
+  photons.push(makePhoton(sigPts, 1150, 0, 'signal', () => {
+    flashes.push({x:822, y:yLand, t:0, color:'#7fd8ff'});
+  }));
+
+  const C = {x:268,y:262};
+  let path;
+  if (d === 1 || d === 2){
+    const first = Math.random() < 0.5 ? PT.bsa : PT.bsb;
+    path = [C, PT.prism, PT.prismOut, first, PT.ebs, d===1 ? PT.d1 : PT.d2];
+  } else if (d === 3){
+    path = [C, PT.prism, PT.prismOut, PT.bsa, PT.d3];
+  } else {
+    path = [C, PT.prism, PT.prismOut, PT.bsb, PT.d4];
+  }
+  const target = d===1?PT.d1:d===2?PT.d2:d===3?PT.d3:PT.d4;
+  photons.push(makePhoton(path, 880, 0.35, 'idler', () => {
+    flashes.push({x:target.x, y:target.y, t:0, color:COLORS[String(d)]});
+  }));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ОТРИСОВКА СЦЕНЫ
+   ═══════════════════════════════════════════════════════════ */
+function rr(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);
+  c.arcTo(x,y,x+w,y,r);
+  c.closePath();
+}
+function line(c,x1,y1,x2,y2,color,w,dash){
+  c.save();
+  c.strokeStyle = color; c.lineWidth = w;
+  if (dash) c.setLineDash(dash);
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  c.restore();
+}
+
+function drawDetector(c, p, label, color, active, r){
+  r = r || 15;
+  c.save();
+  c.beginPath(); c.arc(p.x,p.y,r,0,Math.PI*2);
+  c.fillStyle = active ? hexA(color,0.13) : 'rgba(255,255,255,0.025)';
+  c.fill();
+  c.lineWidth = 2;
+  c.strokeStyle = active ? color : '#2c3a4f';
+  c.stroke();
+  c.fillStyle = active ? color : '#4a5a72';
+  c.font = '600 12px ui-sans-serif,system-ui,sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(label, p.x, p.y+0.5);
+  c.restore();
+}
+function hexA(hex, a){
+  const n = parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
+function drawBS(c, p, on, hue){
+  c.save();
+  c.translate(p.x, p.y);
+  c.rotate(Math.PI/4);
+  c.beginPath(); c.rect(-9,-9,18,18);
+  if (on){
+    c.fillStyle = hue ? hexA(hue,0.18) : 'rgba(120,200,255,.18)';
+    c.fill();
+    c.strokeStyle = hue || '#5ec8ff';
+    c.lineWidth = 2;
+    c.stroke();
+  } else {
+    c.strokeStyle = '#3a4a62';
+    c.lineWidth = 2;
+    c.setLineDash([4,3]);
+    c.stroke();
+  }
+  c.restore();
+  if (!on){
+    c.save();
+    c.strokeStyle = 'rgba(255,107,107,.75)';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(p.x-9,p.y-9); c.lineTo(p.x+9,p.y+9);
+    c.moveTo(p.x+9,p.y-9); c.lineTo(p.x-9,p.y+9);
+    c.stroke();
+    c.restore();
+  }
+}
+
+function smooth(arr){
+  const out = new Float32Array(arr.length);
+  for (let i=0;i<arr.length;i++){
+    const a = arr[Math.max(0,i-1)], b = arr[i], d = arr[Math.min(arr.length-1,i+1)];
+    out[i] = (a + 2*b + d) / 4;
+  }
+  return out;
+}
+
+function drawD0(c){
+  c.save();
+  rr(c, 810, 38, 32, 204, 7);
+  c.fillStyle = '#060a11';
+  c.fill();
+  c.strokeStyle = '#22344c';
+  c.lineWidth = 1.5;
+  c.stroke();
+
+  const sm = smooth(bins[state.filter] || bins.all);
+  let max = 0;
+  for (let i=0;i<NBINS;i++) if (sm[i] > max) max = sm[i];
+  if (max > 0){
+    const col = COLORS[state.filter] || COLORS.all;
+    const barH = 200/NBINS + 0.9;
+    for (let i=0;i<NBINS;i++){
+      const u = -1 + (i+0.5)/NBINS*2;
+      const y = 140 + u*100;
+      const a = sm[i]/max;
+      c.fillStyle = hexA(col, 0.05 + a*0.95);
+      c.fillRect(812, y - barH/2, 28, barH);
+    }
+  }
+  c.restore();
+
+  c.save();
+  c.fillStyle = '#8fa3bd';
+  c.font = '600 13px ui-sans-serif,system-ui,sans-serif';
+  c.textAlign = 'right';
+  c.fillText('D₀', 806, 34);
+  c.restore();
+}
+
+function drawScene(now){
+  const c = sctx;
+  const L = I18N[currentLang].cv;
+  c.clearRect(0, 0, SCENE_W, SCENE_H);
+
+  c.save();
+  c.strokeStyle = 'rgba(60,90,130,.07)';
+  c.lineWidth = 1;
+  for (let x=0;x<=SCENE_W;x+=45){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,SCENE_H); c.stroke(); }
+  for (let y=0;y<=SCENE_H;y+=45){ c.beginPath(); c.moveTo(0,y); c.lineTo(SCENE_W,y); c.stroke(); }
+  c.restore();
+
+  let g = c.createLinearGradient(268,250,820,140);
+  g.addColorStop(0,'rgba(94,200,255,.20)');
+  g.addColorStop(.65,'rgba(94,200,255,.06)');
+  g.addColorStop(1,'rgba(94,200,255,.025)');
+  c.fillStyle = g;
+  c.beginPath();
+  c.moveTo(272,250); c.lineTo(818,40); c.lineTo(818,240); c.closePath();
+  c.fill();
+
+  const dimE = state.eraser ? 1 : 0.22;
+  line(c, 268,262, PT.prism.x, PT.prism.y, 'rgba(255,190,110,.30)', 2);
+  line(c, PT.prismOut.x,PT.prismOut.y, PT.bsa.x,PT.bsa.y, 'rgba(255,190,110,.30)', 2);
+  line(c, PT.prismOut.x,PT.prismOut.y, PT.bsb.x,PT.bsb.y, 'rgba(255,190,110,.30)', 2);
+
+  c.save();
+  c.globalAlpha = 1;
+  line(c, PT.bsa.x,PT.bsa.y, PT.d3.x,PT.d3.y, 'rgba(255,204,85,.42)', 2, [7,6]);
+  line(c, PT.bsb.x,PT.bsb.y, PT.d4.x,PT.d4.y, 'rgba(126,224,138,.42)', 2, [7,6]);
+  c.restore();
+
+  c.save();
+  c.globalAlpha = dimE;
+  line(c, PT.bsa.x,PT.bsa.y, PT.ebs.x,PT.ebs.y, 'rgba(94,200,255,.45)', 2);
+  line(c, PT.bsb.x,PT.bsb.y, PT.ebs.x,PT.ebs.y, 'rgba(94,200,255,.45)', 2);
+  line(c, PT.ebs.x,PT.ebs.y, PT.d1.x,PT.d1.y, 'rgba(79,195,255,.55)', 2);
+  line(c, PT.ebs.x,PT.ebs.y, PT.d2.x,PT.d2.y, 'rgba(255,111,181,.55)', 2);
+  c.restore();
+
+  drawD0(c);
+
+  c.save();
+  rr(c, 36, 232, 74, 36, 7);
+  const lg = c.createLinearGradient(36,232,110,268);
+  lg.addColorStop(0,'#243247'); lg.addColorStop(1,'#151d2b');
+  c.fillStyle = lg; c.fill();
+  c.strokeStyle = '#38506e'; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = '#8fa3bd'; c.font = '600 11px ui-sans-serif,system-ui,sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(L.laser, 73, 251);
+  c.restore();
+
+  line(c, 110,250, 176,250, 'rgba(120,220,255,.55)', 2.5);
+  line(c, 184,234, 268,250, 'rgba(120,220,255,.5)', 2);
+  line(c, 184,266, 268,250, 'rgba(120,220,255,.5)', 2);
+
+  c.save();
+  c.fillStyle = '#2b3a52';
+  rr(c, 176, 200, 8, 26, 2); c.fill();
+  rr(c, 176, 242, 8, 16, 2); c.fill();
+  rr(c, 176, 274, 8, 26, 2); c.fill();
+  c.restore();
+
+  c.save();
+  c.translate(268, 250);
+  c.rotate(Math.PI/4);
+  rr(c, -12, -12, 24, 24, 4);
+  const cg = c.createLinearGradient(-12,-12,12,12);
+  cg.addColorStop(0,'rgba(140,110,255,.55)');
+  cg.addColorStop(1,'rgba(80,60,180,.45)');
+  c.fillStyle = cg; c.fill();
+  c.strokeStyle = '#9d8bff'; c.lineWidth = 1.6; c.stroke();
+  c.restore();
+  c.save();
+  c.fillStyle = '#8f9fbb'; c.font = '600 11px ui-sans-serif,system-ui,sans-serif';
+  c.textAlign = 'left'; c.textBaseline = 'middle';
+  c.fillText(L.bbo, 286, 233);
+  c.restore();
+
+  c.save();
+  c.beginPath();
+  c.moveTo(450, 288); c.lineTo(431, 322); c.lineTo(469, 322); c.closePath();
+  const pg = c.createLinearGradient(431,288,469,322);
+  pg.addColorStop(0,'rgba(255,200,120,.35)');
+  pg.addColorStop(1,'rgba(255,150,60,.18)');
+  c.fillStyle = pg; c.fill();
+  c.strokeStyle = 'rgba(255,190,110,.75)'; c.lineWidth = 1.6; c.stroke();
+  c.restore();
+  c.save();
+  c.fillStyle = '#8f9fbb'; c.font = '600 10.5px ui-sans-serif,system-ui,sans-serif';
+  c.textAlign = 'center';
+  c.fillText(L.prism, 450, 278);
+  c.restore();
+
+  drawBS(c, PT.bsa, true, '#ffcc55');
+  drawBS(c, PT.bsb, true, '#7ee08a');
+  drawBS(c, PT.ebs, state.eraser, '#4fc3ff');
+
+  c.save();
+  c.fillStyle = state.eraser ? '#7fd8ff' : '#7d6a6a';
+  c.font = '600 10.5px ui-sans-serif,system-ui,sans-serif';
+  c.textAlign = 'center';
+  c.fillText(L.eraserBS, 450, 500);
+  c.fillStyle = '#8f9fbb';
+  c.fillText(L.whichPathInfo, 130, 430);
+  c.restore();
+
+  drawDetector(c, PT.d1, 'D₁', '#4fc3ff', state.eraser);
+  drawDetector(c, PT.d2, 'D₂', '#ff6fb5', state.eraser);
+  drawDetector(c, PT.d3, 'D₃', '#ffcc55', true);
+  drawDetector(c, PT.d4, 'D₄', '#7ee08a', true);
+
+  for (let i=flashes.length-1;i>=0;i--){
+    const f = flashes[i];
+    const k = f.t/0.55;
+    if (k >= 1){ flashes.splice(i,1); continue; }
+    c.save();
+    c.globalAlpha = (1-k)*0.9;
+    c.strokeStyle = f.color;
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(f.x, f.y, 8 + k*34, 0, Math.PI*2);
+    c.stroke();
+    c.restore();
+  }
+
+  for (const ph of photons){
+    const local = ph.t - ph.delay;
+    if (local < 0) continue;
+    const p = Math.min(1, local/ph.dur);
+    const pos = pointAt(ph.pts, ph.cum, ph.total, p);
+    const spr = ph.kind === 'signal' ? glowBlue : glowGold;
+    c.drawImage(spr, pos.x-9, pos.y-9, 18, 18);
+    c.save();
+    c.globalAlpha = 0.95;
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.arc(pos.x, pos.y, 1.8, 0, Math.PI*2); c.fill();
+    c.restore();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ЭКРАН
+   ═══════════════════════════════════════════════════════════ */
+function drawScreenPanel(){
+  const c = dctx;
+  c.clearRect(0,0,SCR_W,SCR_H);
+
+  const bg = c.createLinearGradient(0,0,0,SCR_H);
+  bg.addColorStop(0,'#070b12');
+  bg.addColorStop(1,'#05080d');
+  c.fillStyle = bg;
+  c.fillRect(0,0,SCR_W,SCR_H);
+
+  c.save();
+  c.strokeStyle = 'rgba(60,90,130,.09)';
+  c.lineWidth = 1;
+  for (let x=0;x<=SCR_W;x+=50){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,SCR_H); c.stroke(); }
+  c.restore();
+
+  const layer = layers[state.filter] || layers.all;
+  c.drawImage(layer, 0,0,layer.width,layer.height, 0,0,SCR_W,SCR_H);
+
+  const b = bins[state.filter] || bins.all;
+  const sm = smooth(b);
+  let max = 0;
+  for (let i=0;i<NBINS;i++) if (sm[i] > max) max = sm[i];
+
+  if (max > 0.5){
+    const x0 = 8, x1 = SCR_W - 8;
+    const baseY = SCR_H - 8;
+    const hMax = SCR_H * 0.52;
+    const col = COLORS[state.filter] || COLORS.all;
+
+    const ptAt = (i) => ({
+      x: x0 + (i+0.5)/NBINS*(x1-x0),
+      y: baseY - (sm[i]/max)*hMax
+    });
+
+    c.beginPath();
+    c.moveTo(x0, baseY);
+    for (let i=0;i<NBINS;i++){ const p = ptAt(i); c.lineTo(p.x, p.y); }
+    c.lineTo(x1, baseY);
+    c.closePath();
+    c.fillStyle = hexA(col, 0.10);
+    c.fill();
+
+    c.beginPath();
+    for (let i=0;i<NBINS;i++){
+      const p = ptAt(i);
+      i === 0 ? c.moveTo(p.x,p.y) : c.lineTo(p.x,p.y);
+    }
+    c.strokeStyle = hexA(col, 0.95);
+    c.lineWidth = 2;
+    c.lineJoin = 'round';
+    c.stroke();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UI
+   ═══════════════════════════════════════════════════════════ */
+function hintText(){
+  const d = I18N[currentLang];
+  const e = state.eraser;
+  const f = state.filter;
+  if (!e){
+    if (f === '1' || f === '2' || f === '12') return d.hintNoEraser12;
+    return d.hintNoEraser;
+  }
+  return d.hints[f] || '';
+}
+function updateHint(){ hintEl.innerHTML = hintText(); }
+
+function updateStats(){
+  stEls.total.textContent = state.total.toLocaleString(currentLang === 'en' ? 'en-US' : 'ru-RU');
+  stEls[1].textContent = state.counts[1].toLocaleString(currentLang === 'en' ? 'en-US' : 'ru-RU');
+  stEls[2].textContent = state.counts[2].toLocaleString(currentLang === 'en' ? 'en-US' : 'ru-RU');
+  stEls[3].textContent = state.counts[3].toLocaleString(currentLang === 'en' ? 'en-US' : 'ru-RU');
+  stEls[4].textContent = state.counts[4].toLocaleString(currentLang === 'en' ? 'en-US' : 'ru-RU');
+}
+
+function updateFilterButtons(){
+  [...filtersEl.querySelectorAll('button')].forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.f === state.filter);
+    const f = btn.dataset.f;
+    const dead = !state.eraser && (f === '1' || f === '2' || f === '12');
+    btn.classList.toggle('dim', dead);
+  });
+}
+
+function updateDynamicLabels(){
+  const d = I18N[currentLang];
+  eraserTxt.textContent = state.eraser ? d.eraserInserted : d.eraserRemoved;
+  pauseBtn.textContent = state.running ? d.pause : d.resume;
+  updateHint();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ЯЗЫК
+   ═══════════════════════════════════════════════════════════ */
+function applyLang(lang){
+  if (!I18N[lang]) lang = 'ru';
+  currentLang = lang;
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = d.docTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (d[k] != null) el.textContent = d[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if (d[k] != null) el.innerHTML = d[k];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+
+  updateDynamicLabels();
+  updateStats();
+  try { localStorage.setItem('lang', lang); } catch(e){}
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+window.addEventListener('storage', e => {
+  if (e.key === 'lang' && e.newValue && I18N[e.newValue] && e.newValue !== currentLang) {
+    applyLang(e.newValue);
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   СОБЫТИЯ
+   ═══════════════════════════════════════════════════════════ */
+eraserBtn.addEventListener('click', () => {
+  state.eraser = !state.eraser;
+  eraserBtn.classList.toggle('on', state.eraser);
+  eraserBtn.classList.toggle('off', !state.eraser);
+  updateDynamicLabels();
+  updateFilterButtons();
+});
+
+rateEl.addEventListener('input', () => {
+  state.rate = +rateEl.value;
+  rateVal.textContent = state.rate;
+});
+
+pauseBtn.addEventListener('click', () => {
+  state.running = !state.running;
+  updateDynamicLabels();
+});
+
+clearBtn.addEventListener('click', () => {
+  state.total = 0;
+  state.counts = {1:0,2:0,3:0,4:0};
+  binKeys.forEach(k => {
+    bins[k].fill(0);
+    layerCtx[k].clearRect(0,0,layers[k].width,layers[k].height);
+  });
+  photons.length = 0;
+  flashes.length = 0;
+  updateStats();
+});
+
+filtersEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  state.filter = btn.dataset.f;
+  updateFilterButtons();
+  updateHint();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   ГЛАВНЫЙ ЦИКЛ
+   ═══════════════════════════════════════════════════════════ */
+let last = performance.now();
+let acc = 0;
+let statTimer = 0;
+
+function loop(now){
+  const dt = Math.min(0.08, (now - last)/1000);
+  last = now;
+
+  if (state.running){
+    acc += state.rate * dt;
+    let n = Math.floor(acc);
+    acc -= n;
+    if (n > 500) n = 500;
+    for (let i=0;i<n;i++) emitPair();
+  }
+
+  for (let i=photons.length-1;i>=0;i--){
+    const ph = photons[i];
+    ph.t += dt;
+    if (ph.t >= ph.delay + ph.dur){
+      if (ph.onDone) ph.onDone();
+      photons.splice(i,1);
+    }
+  }
+  for (let i=flashes.length-1;i>=0;i--){
+    flashes[i].t += dt;
+    if (flashes[i].t > 0.55) flashes.splice(i,1);
+  }
+
+  drawScene(now);
+  drawScreenPanel();
+
+  statTimer += dt;
+  if (statTimer > 0.2){ statTimer = 0; updateStats(); }
+
+  requestAnimationFrame(loop);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   СТАРТ
+   ═══════════════════════════════════════════════════════════ */
+fitScene();
+fitScreen();
+applyLang(currentLang);
+updateFilterButtons();
+updateStats();
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>

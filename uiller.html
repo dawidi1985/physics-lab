@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Эксперимент Уилера: отложенный выбор</title>
+<style>
+:root{--bg:#07080c;--panel:#101319;--line:#232a36;--text:#e7ecf5;--muted:#8b98ab;--blue:#5aa2ff;--amber:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:24px 16px 48px}
+.wrap{width:100%;max-width:1150px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+h1{margin:0;font-size:25px}
+h2{margin:0 0 10px;font-size:16px}
+.lead{color:var(--muted);margin:8px 0 16px;line-height:1.55;max-width:88ch}
+.lang-switch{display:flex;gap:4px;flex-shrink:0}
+.lang-btn{background:#171d27;color:#8b98ab;border:1px solid #2b3547;border-radius:8px;
+  padding:6px 12px;font-family:ui-monospace,monospace;font-size:12px;font-weight:650;
+  cursor:pointer;transition:all .15s;letter-spacing:.08em}
+.lang-btn:hover{background:#202836;color:#e7ecf5}
+.lang-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+canvas{display:block;width:100%;height:430px;touch-action:none}
+canvas.front{height:280px}
+.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-top:14px}
+@media(max-width:920px){.layout{grid-template-columns:1fr}canvas{height:340px}}
+.controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.row{margin-bottom:11px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+label{color:#b9c5d6;font-size:13.5px}
+.val{font-family:ui-monospace,monospace;color:var(--blue);font-weight:650}
+input[type=range]{width:100%;accent-color:var(--blue);height:22px}
+.btns{display:flex;gap:9px;margin-top:10px}
+button{flex:1;background:#171d27;color:var(--text);border:1px solid #2b3547;border-radius:10px;padding:10px 12px;font:inherit;font-weight:550;cursor:pointer}
+button:hover{background:#202836}
+button.primary{background:#2563eb;border-color:#2563eb}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.stat{background:#0c1017;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.stat .v{font-family:ui-monospace,monospace;font-size:16px;font-weight:650;margin-top:3px}
+.note{color:var(--muted);font-size:13.8px;line-height:1.65}
+.note b{color:var(--text)}
+.small{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0}
+.legend{display:flex;gap:14px;margin-top:10px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="page-head">
+  <h1 data-i18n="h1">Эксперимент Уилера: отложенный выбор</h1>
+  <div class="lang-switch">
+    <button class="lang-btn" data-lang="ru">RU</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+  </div>
+</div>
+<p class="lead" data-i18n-html="lead">Ключевая идея: решение «измерять ли путь частицы» принимается <b>после того, как частица уже прошла через щели</b>, но до её попадания на экран. Тем не менее статистика попаданий показывает: если путь измерен — интерференции нет; если не измерен — есть. Это демонстрирует, что квантовое поведение определяется способом наблюдения, даже если выбор сделан с запозданием.</p>
+
+<div class="card"><canvas id="c"></canvas></div>
+
+<div class="layout">
+  <div class="card"><canvas id="front" class="front"></canvas></div>
+  <div class="controls">
+    <h2 data-i18n="frontHead">Экран — вид спереди</h2>
+    <p class="small" data-i18n="frontNote">Каждая точка — одно попадание. <span style="color:#fbbf24">Жёлтые</span> — путь измерен (частица ведёт себя как частица). <span style="color:#5aa2ff">Синие</span> — путь не измерен (частица ведёт себя как волна).</p>
+    <div class="legend">
+      <span><span class="dot" style="background:#fbbf24"></span><span data-i18n="legendWhich">Измерение пути</span></span>
+      <span><span class="dot" style="background:#5aa2ff"></span><span data-i18n="legendNo">Без измерения</span></span>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="controls">
+  <h2 data-i18n="paramsHead">Параметры</h2>
+  <div class="row"><div class="top"><label for="lambda" data-i18n="lambdaLbl">Длина волны λ</label><span class="val" id="lambdaV">550 нм</span></div><input id="lambda" type="range" min="380" max="700" step="1" value="550"></div>
+  <div class="row"><div class="top"><label for="d" data-i18n="dLbl">Расстояние между щелями d</label><span class="val" id="dV">80 мкм</span></div><input id="d" type="range" min="10" max="400" step="1" value="80"></div>
+  <div class="row"><div class="top"><label for="a" data-i18n="aLbl">Ширина щели a</label><span class="val" id="aV">12 мкм</span></div><input id="a" type="range" min="2" max="80" step="1" value="12"></div>
+  <div class="row"><div class="top"><label for="L" data-i18n="LLbl">Расстояние до экрана L</label><span class="val" id="LV">25 мм</span></div><input id="L" type="range" min="1" max="1000" step="1" value="25"></div>
+  <div class="row"><div class="top"><label for="rate" data-i18n="rateLbl">Скорость частиц</label><span class="val" id="rateV">30 частиц/с</span></div><input id="rate" type="range" min="1" max="200" step="1" value="30"></div>
+  <div class="row"><div class="top"><label for="prob" data-i18n="probLbl">Доля частиц с измерением пути</label><span class="val" id="probV">50%</span></div><input id="prob" type="range" min="0" max="100" step="1" value="50"></div>
+  <div class="btns">
+    <button id="fire" class="primary" data-i18n="fire">Пуск</button>
+    <button id="pause" data-i18n="pause">Пауза</button>
+    <button id="clear" data-i18n="clear">Очистить</button>
+  </div>
+</div>
+
+<div>
+  <div class="stats">
+    <div class="stat"><div class="k" data-i18n="stTotal">Всего частиц</div><div class="v" id="nTotal">0</div></div>
+    <div class="stat"><div class="k" data-i18n="stWhich">Путь измерен</div><div class="v" id="nWhich">0</div></div>
+    <div class="stat"><div class="k" data-i18n="stNo">Без измерения</div><div class="v" id="nInterf">0</div></div>
+  </div>
+  <div class="note" data-i18n-html="note">
+    <b>Почему это важно:</b> в схеме отложенного выбора решение принимается в точке, которую частица проходит <i>уже после щелей</i>. Классическая интуиция говорит, что поведение частицы должно быть определено в момент прохождения щелей. Но эксперимент показывает: итоговое распределение определяется выбором наблюдателя, даже если он сделан позже. При 50% вы увидите <b>оба</b> типа точек одновременно — это и есть наглядная демонстрация.
+  </div>
+</div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════
+   I18N
+   ══════════════════════════════════════════════════════════════════ */
+const I18N = {
+  ru: {
+    docTitle: 'Эксперимент Уилера: отложенный выбор',
+    h1: 'Эксперимент Уилера: отложенный выбор',
+    lead: 'Ключевая идея: решение «измерять ли путь частицы» принимается <b>после того, как частица уже прошла через щели</b>, но до её попадания на экран. Тем не менее статистика попаданий показывает: если путь измерен — интерференции нет; если не измерен — есть. Это демонстрирует, что квантовое поведение определяется способом наблюдения, даже если выбор сделан с запозданием.',
+    frontHead: 'Экран — вид спереди',
+    frontNote: 'Каждая точка — одно попадание. <span style="color:#fbbf24">Жёлтые</span> — путь измерен (частица ведёт себя как частица). <span style="color:#5aa2ff">Синие</span> — путь не измерен (частица ведёт себя как волна).',
+    legendWhich: 'Измерение пути',
+    legendNo: 'Без измерения',
+    paramsHead: 'Параметры',
+    lambdaLbl: 'Длина волны λ',
+    dLbl: 'Расстояние между щелями d',
+    aLbl: 'Ширина щели a',
+    LLbl: 'Расстояние до экрана L',
+    rateLbl: 'Скорость частиц',
+    probLbl: 'Доля частиц с измерением пути',
+    fire: 'Пуск',
+    pause: 'Пауза',
+    pauseAlt: 'Продолжить',
+    run: 'Идёт',
+    clear: 'Очистить',
+    stTotal: 'Всего частиц',
+    stWhich: 'Путь измерен',
+    stNo: 'Без измерения',
+    note: '<b>Почему это важно:</b> в схеме отложенного выбора решение принимается в точке, которую частица проходит <i>уже после щелей</i>. Классическая интуиция говорит, что поведение частицы должно быть определено в момент прохождения щелей. Но эксперимент показывает: итоговое распределение определяется выбором наблюдателя, даже если он сделан позже. При 50% вы увидите <b>оба</b> типа точек одновременно — это и есть наглядная демонстрация.',
+    units: { nm: 'нм', um: 'мкм', mm: 'мм', pps: 'частиц/с', percent: '%' },
+    cv: {
+      source: 'Источник',
+      slits: 'Щели',
+      screen: 'Экран',
+      choice: 'Выбор',
+      distr: 'Распределения',
+      front: 'Попадания на экран (вид спереди)'
+    }
+  },
+  en: {
+    docTitle: "Wheeler's Experiment: Delayed Choice",
+    h1: "Wheeler's Experiment: Delayed Choice",
+    lead: "The key idea: the decision whether to measure the particle's path is made <b>after the particle has already passed through the slits</b>, but before it hits the screen. Nevertheless, the statistics of hits show: if the path is measured — there is no interference; if not measured — there is. This demonstrates that quantum behaviour is determined by the way we observe it, even if the choice is made with a delay.",
+    frontHead: 'Screen — front view',
+    frontNote: 'Each dot is one hit. <span style="color:#fbbf24">Yellow</span> — path measured (the particle behaves like a particle). <span style="color:#5aa2ff">Blue</span> — path not measured (the particle behaves like a wave).',
+    legendWhich: 'Path measured',
+    legendNo: 'No measurement',
+    paramsHead: 'Parameters',
+    lambdaLbl: 'Wavelength λ',
+    dLbl: 'Slit separation d',
+    aLbl: 'Slit width a',
+    LLbl: 'Screen distance L',
+    rateLbl: 'Particle rate',
+    probLbl: 'Fraction with which-path measurement',
+    fire: 'Fire',
+    pause: 'Pause',
+    pauseAlt: 'Resume',
+    run: 'Running',
+    clear: 'Clear',
+    stTotal: 'Total particles',
+    stWhich: 'Path measured',
+    stNo: 'No measurement',
+    note: '<b>Why this matters:</b> in the delayed-choice scheme the decision is made at a point the particle passes <i>after the slits</i>. Classical intuition says the particle\'s behaviour must be determined at the moment it passes the slits. But the experiment shows: the final distribution is determined by the observer\'s choice, even if made later. At 50% you will see <b>both</b> kinds of dots at once — that is the visual demonstration.',
+    units: { nm: 'nm', um: 'µm', mm: 'mm', pps: 'particles/s', percent: '%' },
+    cv: {
+      source: 'Source',
+      slits: 'Slits',
+      screen: 'Screen',
+      choice: 'Choice',
+      distr: 'Distributions',
+      front: 'Screen hits (front view)'
+    }
+  }
+};
+
+let currentLang = 'ru';
+(function initLang(){
+  let urlLang = null;
+  try { urlLang = new URLSearchParams(location.search).get('lang'); } catch(e){}
+  const stored = localStorage.getItem('lang');
+  const candidate = (urlLang || stored || 'ru').toLowerCase();
+  currentLang = I18N[candidate] ? candidate : 'ru';
+})();
+
+function applyLang(lang){
+  if (!I18N[lang]) lang = 'ru';
+  currentLang = lang;
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = d.docTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (d[k] != null) el.textContent = d[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if (d[k] != null) el.innerHTML = d[k];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+
+  updateDynamicLabels();
+  try { localStorage.setItem('lang', lang); } catch(e){}
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+window.addEventListener('storage', e => {
+  if (e.key === 'lang' && e.newValue && I18N[e.newValue] && e.newValue !== currentLang) {
+    applyLang(e.newValue);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ОРИГИНАЛЬНАЯ ЛОГИКА (без изменений физики)
+   ══════════════════════════════════════════════════════════════════ */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const cvF = document.getElementById('front'), ctxF = cvF.getContext('2d');
+
+const els = {
+  lambda: document.getElementById('lambda'), d: document.getElementById('d'),
+  a: document.getElementById('a'), L: document.getElementById('L'),
+  rate: document.getElementById('rate'), prob: document.getElementById('prob'),
+};
+const outs = {
+  lambda: document.getElementById('lambdaV'), d: document.getElementById('dV'),
+  a: document.getElementById('aV'), L: document.getElementById('LV'),
+  rate: document.getElementById('rateV'), prob: document.getElementById('probV'),
+  nTotal: document.getElementById('nTotal'), nWhich: document.getElementById('nWhich'),
+  nInterf: document.getElementById('nInterf'),
+};
+const bFire = document.getElementById('fire'), bPause = document.getElementById('pause'), bClear = document.getElementById('clear');
+
+let W = 900, H = 430, WF = 700, HF = 280, dpr = 1;
+let running = false;
+let particles = [], hits = [];
+let acc = 0, last = 0, time = 0;
+let nWhich = 0, nInterf = 0;
+
+const P = { lambda: 550e-9, d: 80e-6, a: 12e-6, L: 25e-3, rate: 30, prob: 0.5 };
+
+const CFG = {
+  sourceX: 0.12, slitX: 0.35, decisionX: 0.55, screenX: 0.85,
+  particleSpeed: 0.45,
+  decisionProgress: 0.55,
+};
+
+function wavelengthColor(nm) {
+  let r = 0, g = 0, b = 0;
+  if (nm < 440) { r = -(nm - 440) / 60; b = 1; }
+  else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+  else if (nm < 510) { g = 1; b = -(nm - 510) / 20; }
+  else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+  else if (nm < 645) { r = 1; g = -(nm - 645) / 65; }
+  else { r = 1; }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function rgba(c, a) { return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
+
+function apertureTop(x) { return Math.abs(x - P.d/2) <= P.a/2 ? 1 : 0; }
+function apertureBottom(x) { return Math.abs(x + P.d/2) <= P.a/2 ? 1 : 0; }
+function apertureAll(x) { return (apertureTop(x) || apertureBottom(x)) ? 1 : 0; }
+
+function fresnel(aperture, x1min, x1max, x2min, x2max, N2, N1) {
+  const lam = P.lambda, L = Math.max(P.L, 1e-6), k = 2 * Math.PI / lam;
+  const dx1 = (x1max - x1min) / N1, dx2 = (x2max - x2min) / N2;
+  const out = new Float64Array(N2);
+  const xs = [], ts = [];
+  for (let i = 0; i < N1; i++) {
+    const x1 = x1min + (i + 0.5) * dx1;
+    xs.push(x1); ts.push(aperture(x1));
+  }
+  const coeff = 1 / (lam * L);
+  for (let j = 0; j < N2; j++) {
+    const x2 = x2min + (j + 0.5) * dx2;
+    let re = 0, im = 0;
+    for (let i = 0; i < N1; i++) {
+      if (!ts[i]) continue;
+      const dx = x2 - xs[i], ph = k * dx * dx / (2 * L);
+      re += Math.cos(ph); im += Math.sin(ph);
+    }
+    out[j] = (re * re + im * im) * coeff * coeff * dx1 * dx1;
+  }
+  return out;
+}
+
+let xMin = -1e-3, xMax = 1e-3;
+let profileWhich = null, profileInterf = null;
+let profileWhichMax = 1, profileInterfMax = 1;
+
+function computeProfiles() {
+  const N2 = 720, N1 = 400;
+  const envelope = P.lambda * P.L / P.a;
+  const half = Math.min(Math.max(3 * envelope, 20e-6), 0.01);
+  xMin = -half; xMax = half;
+
+  const top = fresnel(apertureTop, P.d/2 - P.a/2, P.d/2 + P.a/2, xMin, xMax, N2, N1);
+  const bot = fresnel(apertureBottom, -P.d/2 - P.a/2, -P.d/2 + P.a/2, xMin, xMax, N2, N1);
+  profileWhich = new Float64Array(N2);
+  profileWhichMax = 0;
+  for (let i = 0; i < N2; i++) {
+    profileWhich[i] = top[i] + bot[i];
+    if (profileWhich[i] > profileWhichMax) profileWhichMax = profileWhich[i];
+  }
+
+  profileInterf = fresnel(apertureAll, -P.d/2 - P.a/2, P.d/2 + P.a/2, xMin, xMax, N2, N1);
+  profileInterfMax = 0;
+  for (let i = 0; i < N2; i++) {
+    if (profileInterf[i] > profileInterfMax) profileInterfMax = profileInterf[i];
+  }
+}
+
+function sampleFromProfile(profile, maxVal) {
+  const N = profile.length;
+  const dx = (xMax - xMin) / N;
+  for (let a = 0; a < 300; a++) {
+    const j = (Math.random() * N) | 0;
+    if (Math.random() < profile[j] / maxVal) return xMin + (j + 0.5) * dx;
+  }
+  const j = (Math.random() * N) | 0;
+  return xMin + (j + 0.5) * dx;
+}
+
+class Particle {
+  constructor() {
+    this.progress = 0;
+    this.mode = null;
+    this.landX = null;
+    this.screenY = (Math.random() * 2 - 1) * 0.9;
+    this.flash = 0;
+    this.landed = false;
+  }
+  update(dt) {
+    this.progress += dt * CFG.particleSpeed;
+    if (this.mode === null && this.progress >= CFG.decisionProgress) {
+      this.mode = Math.random() < P.prob ? 'which' : 'interference';
+      this.flash = 1;
+      this.landX = this.mode === 'which'
+        ? sampleFromProfile(profileWhich, profileWhichMax)
+        : sampleFromProfile(profileInterf, profileInterfMax);
+    }
+    this.flash *= 0.93;
+    if (this.progress >= 1) this.landed = true;
+  }
+}
+
+function geom() {
+  const sourceX = W * CFG.sourceX, slitX = W * CFG.slitX;
+  const decisionX = W * CFG.decisionX, screenX = W * CFG.screenX;
+  const cy = H * 0.5;
+  const halfM = xMax;
+  const pxPerM = (H * 0.42) / halfM;
+  const barrierPxPerMicron = Math.min(1.0, H * 0.32 / 400);
+  const gapPx = P.d * 1e6 * barrierPxPerMicron;
+  const slitPx = Math.max(2.5, P.a * 1e6 * barrierPxPerMicron);
+  return { sourceX, slitX, decisionX, screenX, cy, halfM, pxPerM, barrierPxPerMicron, gapPx, slitPx };
+}
+
+function drawWaves(g, rgb) {
+  const lamPx = Math.max(10, Math.min(30, 80 * P.lambda * 1e9 / 550));
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  for (let r = lamPx; r < g.slitX - g.sourceX; r += lamPx) {
+    const a = 0.06 * (1 - r / (g.slitX - g.sourceX + 20));
+    if (a <= 0) continue;
+    ctx.strokeStyle = rgba(rgb, a);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(g.sourceX, g.cy, r, -Math.PI/2, Math.PI/2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawParticle(p, g) {
+  const px = g.sourceX + (g.screenX - g.sourceX) * p.progress;
+  let py;
+  if (p.mode === null || p.progress < CFG.decisionProgress) {
+    py = g.cy;
+  } else {
+    const t = (p.progress - CFG.decisionProgress) / (1 - CFG.decisionProgress);
+    const targetY = g.cy - p.landX * g.pxPerM;
+    py = g.cy + (targetY - g.cy) * t;
+  }
+  const col = p.mode === 'which' ? [251, 191, 36]
+            : p.mode === 'interference' ? [90, 162, 255]
+            : [200, 210, 230];
+  if (p.flash > 0.01) {
+    ctx.strokeStyle = rgba(col, p.flash * 0.8);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px, py, 6 + (1 - p.flash) * 20, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = rgba(col, 0.95);
+  ctx.beginPath();
+  ctx.arc(px, py, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function draw() {
+  const d = I18N[currentLang];
+  const L = d.cv;
+
+  ctx.clearRect(0, 0, W, H);
+  const bg = ctx.createLinearGradient(0, 0, W, 0);
+  bg.addColorStop(0, '#05070c'); bg.addColorStop(1, '#0a0f18');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  const g = geom();
+  const rgb = wavelengthColor(P.lambda / 1e9);
+  drawWaves(g, rgb);
+
+  ctx.fillStyle = '#1b2331'; ctx.fillRect(g.slitX - 6, 0, 12, H);
+  ctx.fillStyle = '#05070c';
+  ctx.fillRect(g.slitX - 7, g.cy - g.gapPx/2 - g.slitPx/2, 14, g.slitPx);
+  ctx.fillRect(g.slitX - 7, g.cy + g.gapPx/2 - g.slitPx/2, 14, g.slitPx);
+
+  ctx.strokeStyle = 'rgba(139,152,171,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(g.decisionX, 30); ctx.lineTo(g.decisionX, H - 30);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#8b98ab'; ctx.font = '11px ui-monospace,monospace'; ctx.textAlign = 'center';
+  ctx.fillText(L.choice, g.decisionX, 22);
+  ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 14px Inter,system-ui';
+  ctx.fillText('?', g.decisionX, H - 15);
+
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath(); ctx.arc(g.sourceX, g.cy, 6.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8b98ab'; ctx.font = '12px Inter,system-ui';
+  ctx.fillText(L.source, g.sourceX, g.cy + 26);
+  ctx.fillText(L.slits, g.slitX, g.cy + H * 0.45);
+
+  ctx.fillStyle = '#151b26'; ctx.fillRect(g.screenX - 4, 0, 8, H);
+  ctx.fillStyle = '#e7ecf5'; ctx.font = '11px ui-monospace,monospace';
+  ctx.fillText(L.screen, g.screenX, 22);
+
+  hits.forEach(h => {
+    const y = g.cy - h.x * g.pxPerM;
+    if (y < 8 || y > H - 8) return;
+    const col = h.mode === 'which' ? [251, 191, 36] : [90, 162, 255];
+    ctx.fillStyle = rgba(col, 0.7);
+    ctx.beginPath(); ctx.arc(g.screenX, y, 1.2, 0, Math.PI * 2); ctx.fill();
+  });
+
+  particles.forEach(p => drawParticle(p, g));
+
+  const graphX = g.screenX + 20;
+  const graphW = Math.max(45, W - graphX - 15);
+  const top = 40, gh = H - 80;
+
+  ctx.strokeStyle = 'rgba(139,152,171,0.25)';
+  ctx.beginPath(); ctx.moveTo(graphX, top); ctx.lineTo(graphX, top + gh); ctx.stroke();
+
+  if (profileInterf) {
+    ctx.beginPath();
+    const N = profileInterf.length;
+    for (let i = 0; i < N; i++) {
+      const I = Math.min(profileInterf[i] / profileInterfMax, 1);
+      const y = top + gh * (1 - I);
+      const px = graphX + graphW * i / (N - 1);
+      if (i) ctx.lineTo(px, y); else ctx.moveTo(px, y);
+    }
+    ctx.strokeStyle = 'rgba(90,162,255,0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  if (profileWhich) {
+    ctx.beginPath();
+    const N = profileWhich.length;
+    for (let i = 0; i < N; i++) {
+      const I = Math.min(profileWhich[i] / profileWhichMax, 1);
+      const y = top + gh * (1 - I);
+      const px = graphX + graphW * i / (N - 1);
+      if (i) ctx.lineTo(px, y); else ctx.moveTo(px, y);
+    }
+    ctx.strokeStyle = 'rgba(251,191,36,0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  ctx.fillStyle = '#8b98ab'; ctx.font = '11px ui-monospace,monospace'; ctx.textAlign = 'left';
+  ctx.fillText(L.distr, graphX, top - 12);
+}
+
+function drawFront() {
+  const d = I18N[currentLang];
+  ctxF.clearRect(0, 0, WF, HF);
+  ctxF.fillStyle = '#05070c'; ctxF.fillRect(0, 0, WF, HF);
+  const cx = WF / 2, halfW = WF / 2 - 12, halfH = HF / 2 - 9;
+  hits.forEach(h => {
+    const px = cx + (h.x / xMax) * halfW;
+    const py = HF / 2 - h.y * halfH;
+    if (px < 5 || px > WF - 5) return;
+    const col = h.mode === 'which' ? [251, 191, 36] : [90, 162, 255];
+    ctxF.fillStyle = rgba(col, 0.55);
+    ctxF.beginPath(); ctxF.arc(px, py, 1.1, 0, Math.PI * 2); ctxF.fill();
+  });
+  ctxF.strokeStyle = 'rgba(139,152,171,0.25)';
+  ctxF.beginPath(); ctxF.moveTo(cx, 8); ctxF.lineTo(cx, HF - 22); ctxF.stroke();
+  ctxF.fillStyle = '#8b98ab'; ctxF.font = '11px ui-monospace,monospace'; ctxF.textAlign = 'center';
+  ctxF.fillText('-x', 16, HF - 7); ctxF.fillText('0', cx, HF - 7); ctxF.fillText('+x', WF - 18, HF - 7);
+  ctxF.textAlign = 'left';
+  ctxF.fillText(d.cv.front, 12, 18);
+}
+
+function update(dt) {
+  time += dt;
+  if (running) {
+    acc += P.rate * dt;
+    while (acc >= 1) { particles.push(new Particle()); acc -= 1; }
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.update(dt);
+    if (p.landed) {
+      hits.push({ x: p.landX, y: p.screenY, mode: p.mode });
+      if (p.mode === 'which') nWhich++; else nInterf++;
+      if (hits.length > 20000) hits.shift();
+      particles.splice(i, 1);
+    }
+  }
+  outs.nTotal.textContent = nWhich + nInterf;
+  outs.nWhich.textContent = nWhich;
+  outs.nInterf.textContent = nInterf;
+}
+
+function updateDynamicLabels(){
+  const U = I18N[currentLang].units;
+  outs.lambda.textContent = els.lambda.value + ' ' + U.nm;
+  outs.d.textContent = els.d.value + ' ' + U.um;
+  outs.a.textContent = els.a.value + ' ' + U.um;
+  outs.L.textContent = els.L.value + ' ' + U.mm;
+  outs.rate.textContent = els.rate.value + ' ' + U.pps;
+  outs.prob.textContent = els.prob.value + U.percent;
+}
+
+function refresh() {
+  P.lambda = +els.lambda.value * 1e-9;
+  P.d = +els.d.value * 1e-6;
+  P.a = +els.a.value * 1e-6;
+  P.L = +els.L.value * 1e-3;
+  P.rate = +els.rate.value;
+  P.prob = +els.prob.value / 100;
+  updateDynamicLabels();
+  computeProfiles();
+}
+
+Object.keys(els).forEach(k => els[k].addEventListener('input', refresh));
+
+bFire.addEventListener('click', () => {
+  running = true;
+  const d = I18N[currentLang];
+  bFire.textContent = d.run;
+  bPause.textContent = d.pause;
+});
+bPause.addEventListener('click', () => {
+  running = !running;
+  const d = I18N[currentLang];
+  bPause.textContent = running ? d.pause : d.pauseAlt;
+  bFire.textContent = running ? d.run : d.fire;
+});
+bClear.addEventListener('click', () => {
+  hits = []; particles = []; nWhich = 0; nInterf = 0; acc = 0;
+});
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = cv.getBoundingClientRect(); W = r.width || 900; H = r.height || 430;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const rf = cvF.getBoundingClientRect(); WF = rf.width || 700; HF = rf.height || 280;
+  cvF.width = WF * dpr; cvF.height = HF * dpr; ctxF.setTransform(dpr, 0, 0, dpr, 0, 0);
+  computeProfiles();
+}
+window.addEventListener('resize', resize);
+
+/* ── СТАРТ ── */
+applyLang(currentLang);
+refresh();
+resize();
+
+function loop(ts) {
+  if (!last) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05);
+  last = ts;
+  update(dt); draw(); drawFront();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
