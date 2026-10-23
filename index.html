@@ -213,6 +213,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   .viewer{padding:8px}
   .viewer-head{font-size:10px;padding:0 8px;letter-spacing:.12em}
 }
+<<<<<<< HEAD
 /* ═══ ЭКРАН ЗАГРУЗКИ МОДУЛЯ ═══ */
 .viewer-loader {
   position: absolute; inset: 38px 0 0 0; /* ниже шапки */
@@ -236,6 +237,8 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   content: ''; animation: dots 1.5s steps(4, end) infinite;
 }
 @keyframes dots { 0%, 100% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+=======
+>>>>>>> 3ce2b858478f9a1a35ee52fa95c761947bfc22f2
 </style>
 </head>
 <body>
@@ -294,6 +297,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
 
 <div class="viewer" id="viewer">
   <div class="viewer-frame">
+<<<<<<< HEAD
    <div class="viewer-head">
      <span id="viewerTitle">// MODULE //</span>
      <button class="close-btn" id="closeBtn" data-i18n="close">✕ ВЫХОД</button>
@@ -307,6 +311,14 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   <!-- ═════════════════ -->
 
   <iframe id="expFrame" title="experiment"></iframe>
+=======
+    <div class="viewer-head">
+      <span id="viewerTitle">// MODULE //</span>
+      <button class="close-btn" id="closeBtn" data-i18n="close">✕ ВЫХОД</button>
+    </div>
+    <iframe id="expFrame" title="experiment"></iframe>
+  </div>
+>>>>>>> 3ce2b858478f9a1a35ee52fa95c761947bfc22f2
 </div>
 
 <!-- ═══ ПАСХАЛКА: HTML ДО <script> ═══ -->
@@ -960,10 +972,13 @@ window.addEventListener('keydown', e => {
 /* ═══════════════════════════════════════════════════════════
    СТАРТ
    ═══════════════════════════════════════════════════════════ */
+<<<<<<< HEAD
 // Фоновая предзагрузка всех экспериментов после загрузки главной страницы
 setTimeout(() => {
   Object.values(EXP_FILES).forEach(prefetchFile);
 }, 2000); // через 2 секунды после старта
+=======
+>>>>>>> 3ce2b858478f9a1a35ee52fa95c761947bfc22f2
 applyLang(currentLang);
 </script>
 </body>
