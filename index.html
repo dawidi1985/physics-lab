@@ -824,7 +824,7 @@ requestAnimationFrame(frame);
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   МЕНЮ ЭКСПЕРИМЕНТОВ (с Prefetch и загрузчиком)
+   МЕНЮ ЭКСПЕРИМЕНТОВ (с моментальным Prefetch)
    ═══════════════════════════════════════════════════════════ */
 let currentExp = null;
 const viewer   = document.getElementById('viewer');
@@ -846,21 +846,26 @@ function setViewerTitle(key) {
   titleEl.textContent = '// ' + t + ' //';
 }
 
-// Функция предзагрузки файлов (срабатывает при наведении на кнопку)
+// Функция предзагрузки файлов
 const prefetched = new Set();
 function prefetchFile(file) {
   if (prefetched.has(file)) return;
+  
+  // Принудительно скачиваем в кэш
+  fetch(file, { cache: "force-cache" }).catch(() => {});
+  
   const link = document.createElement('link');
   link.rel = 'prefetch';
   link.href = file;
   document.head.appendChild(link);
+  
   prefetched.add(file);
 }
 
 // Скрываем загрузчик, когда iframe полностью загрузился
 frame.addEventListener('load', () => {
   if (frame.src && frame.src !== 'about:blank') {
-    loader.classList.remove('active');
+    setTimeout(() => loader.classList.remove('active'), 300);
   }
 });
 
@@ -879,11 +884,10 @@ document.querySelectorAll('.exp-btn').forEach(btn => {
     currentExp = key;
     setViewerTitle(key);
     
-    // Показываем спиннер перед загрузкой
     loader.classList.add('active');
     
-    // Запускаем загрузку (с параметром языка)
-    frame.src = file + '?lang=' + currentLang;
+    // ВАЖНО: Без ?lang=, чтобы файл брался из кэша (prefetch)
+    frame.src = file;
     viewer.classList.add('on');
   });
 });
@@ -995,10 +999,10 @@ window.addEventListener('keydown', e => {
 /* ═══════════════════════════════════════════════════════════
    СТАРТ
    ═══════════════════════════════════════════════════════════ */
-// Фоновая предзагрузка всех экспериментов после загрузки главной страницы
-setTimeout(() => {
+// Мгновенная фоновая предзагрузка всех экспериментов
+window.addEventListener('load', () => {
   Object.values(EXP_FILES).forEach(prefetchFile);
-}, 2000); // через 2 секунды после старта
+});
 
 applyLang(currentLang);
 </script>
