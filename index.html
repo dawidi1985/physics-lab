@@ -206,14 +206,6 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   box-shadow:0 0 12px rgba(255,51,85,.5);
 }
 
-@media (max-width:820px){
-  .menu{width:calc(100vw - 36px);top:auto;bottom:70px;max-height:44vh;overflow-y:auto}
-  .topbar .status span:not(.lang-switch){display:none}
-  .hud-bottom span:nth-child(2),.hud-bottom span:nth-child(3){display:none}
-  .viewer{padding:8px}
-  .viewer-head{font-size:10px;padding:0 8px;letter-spacing:.12em}
-}
-<<<<<<< HEAD
 /* ═══ ЭКРАН ЗАГРУЗКИ МОДУЛЯ ═══ */
 .viewer-loader {
   position: absolute; inset: 38px 0 0 0; /* ниже шапки */
@@ -237,8 +229,14 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   content: ''; animation: dots 1.5s steps(4, end) infinite;
 }
 @keyframes dots { 0%, 100% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
-=======
->>>>>>> 3ce2b858478f9a1a35ee52fa95c761947bfc22f2
+
+@media (max-width:820px){
+  .menu{width:calc(100vw - 36px);top:auto;bottom:70px;max-height:44vh;overflow-y:auto}
+  .topbar .status span:not(.lang-switch){display:none}
+  .hud-bottom span:nth-child(2),.hud-bottom span:nth-child(3){display:none}
+  .viewer{padding:8px}
+  .viewer-head{font-size:10px;padding:0 8px;letter-spacing:.12em}
+}
 </style>
 </head>
 <body>
@@ -297,28 +295,20 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
 
 <div class="viewer" id="viewer">
   <div class="viewer-frame">
-<<<<<<< HEAD
-   <div class="viewer-head">
-     <span id="viewerTitle">// MODULE //</span>
-     <button class="close-btn" id="closeBtn" data-i18n="close">✕ ВЫХОД</button>
-   </div>
-  
-  <!-- ═══ НОВЫЙ БЛОК ═══ -->
-  <div class="viewer-loader" id="viewerLoader">
-    <div class="loader-spinner"></div>
-    <div class="loader-text">Инициализация модуля</div>
-  </div>
-  <!-- ═════════════════ -->
-
-  <iframe id="expFrame" title="experiment"></iframe>
-=======
     <div class="viewer-head">
       <span id="viewerTitle">// MODULE //</span>
       <button class="close-btn" id="closeBtn" data-i18n="close">✕ ВЫХОД</button>
     </div>
+    
+    <!-- ═══ НОВЫЙ БЛОК ═══ -->
+    <div class="viewer-loader" id="viewerLoader">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Инициализация модуля</div>
+    </div>
+    <!-- ═════════════════ -->
+    
     <iframe id="expFrame" title="experiment"></iframe>
   </div>
->>>>>>> 3ce2b858478f9a1a35ee52fa95c761947bfc22f2
 </div>
 
 <!-- ═══ ПАСХАЛКА: HTML ДО <script> ═══ -->
@@ -834,13 +824,14 @@ requestAnimationFrame(frame);
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   МЕНЮ ЭКСПЕРИМЕНТОВ
+   МЕНЮ ЭКСПЕРИМЕНТОВ (с Prefetch и загрузчиком)
    ═══════════════════════════════════════════════════════════ */
 let currentExp = null;
-const viewer  = document.getElementById('viewer');
-const frame   = document.getElementById('expFrame');
-const titleEl = document.getElementById('viewerTitle');
-const closeBtn= document.getElementById('closeBtn');
+const viewer   = document.getElementById('viewer');
+const frame    = document.getElementById('expFrame');
+const titleEl  = document.getElementById('viewerTitle');
+const closeBtn = document.getElementById('closeBtn');
+const loader   = document.getElementById('viewerLoader');
 
 const EXP_FILES = {
   kvant:   'kvant_last.html',
@@ -855,13 +846,43 @@ function setViewerTitle(key) {
   titleEl.textContent = '// ' + t + ' //';
 }
 
+// Функция предзагрузки файлов (срабатывает при наведении на кнопку)
+const prefetched = new Set();
+function prefetchFile(file) {
+  if (prefetched.has(file)) return;
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = file;
+  document.head.appendChild(link);
+  prefetched.add(file);
+}
+
+// Скрываем загрузчик, когда iframe полностью загрузился
+frame.addEventListener('load', () => {
+  if (frame.src && frame.src !== 'about:blank') {
+    loader.classList.remove('active');
+  }
+});
+
 document.querySelectorAll('.exp-btn').forEach(btn => {
+  const key = btn.dataset.exp;
+  const file = EXP_FILES[key];
+  
+  // 1. ПРЕДЗАГРУЗКА ПРИ НАВЕДЕНИИ
+  btn.addEventListener('mouseenter', () => {
+    if (file) prefetchFile(file);
+  });
+
+  // 2. ОТКРЫТИЕ С ЗАГРУЗЧИКОМ
   btn.addEventListener('click', () => {
-    const key = btn.dataset.exp;
-    const file = EXP_FILES[key];
     if (!file) return;
     currentExp = key;
     setViewerTitle(key);
+    
+    // Показываем спиннер перед загрузкой
+    loader.classList.add('active');
+    
+    // Запускаем загрузку (с параметром языка)
     frame.src = file + '?lang=' + currentLang;
     viewer.classList.add('on');
   });
@@ -869,9 +890,11 @@ document.querySelectorAll('.exp-btn').forEach(btn => {
 
 function closeViewer(){
   viewer.classList.remove('on');
+  loader.classList.remove('active');
   currentExp = null;
   setTimeout(() => { frame.src = 'about:blank'; }, 200);
 }
+
 closeBtn.addEventListener('click', closeViewer);
 viewer.addEventListener('click', e => {
   if (e.target === viewer) closeViewer();
@@ -972,13 +995,11 @@ window.addEventListener('keydown', e => {
 /* ═══════════════════════════════════════════════════════════
    СТАРТ
    ═══════════════════════════════════════════════════════════ */
-<<<<<<< HEAD
 // Фоновая предзагрузка всех экспериментов после загрузки главной страницы
 setTimeout(() => {
   Object.values(EXP_FILES).forEach(prefetchFile);
 }, 2000); // через 2 секунды после старта
-=======
->>>>>>> 3ce2b858478f9a1a35ee52fa95c761947bfc22f2
+
 applyLang(currentLang);
 </script>
 </body>
