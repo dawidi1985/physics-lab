@@ -72,7 +72,6 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   padding-bottom:9px;margin-bottom:11px;border-bottom:1px dashed var(--panel-border);
   font-size:10px;text-shadow:0 0 6px rgba(255,184,0,.5)}
 
-/* Кнопки теперь работают как ссылки */
 .exp-btn{display:block;width:100%;text-align:left;background:transparent;color:var(--green);
   border:1px solid var(--panel-border);padding:10px 12px;margin-bottom:6px;cursor:pointer;
   font-family:inherit;font-size:11px;letter-spacing:.05em;text-decoration:none;
@@ -101,7 +100,6 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   border:1px solid rgba(51,255,119,.18);text-shadow:0 0 5px rgba(51,255,119,.25)}
 .hud-bottom sub{font-size:.75em;vertical-align:sub}
 
-/* ═══ ПАСХАЛКА ═══ */
 .easter-pulse{
   position:fixed;width:10px;height:10px;border-radius:50%;
   pointer-events:none;z-index:50;
@@ -212,20 +210,19 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
 <aside class="menu">
   <div class="menu-title" data-i18n="menuTitle">// ПУЛЬТ · ФИЗИЧЕСКИЕ МОДУЛИ</div>
   
-  <!-- Ссылки вместо кнопок -->
-  <a href="kvant_last.html" target="_blank" class="exp-btn">
+  <a href="kvant_last.html" class="exp-btn">
     <span class="num">01</span><span data-i18n="exp1">КВАНТОВЫЙ ЛАСТИК</span><span class="tag">⟶</span>
   </a>
-  <a href="elitcurwaidman.html" target="_blank" class="exp-btn">
+  <a href="elitcurwaidman.html" class="exp-btn">
     <span class="num">02</span><span data-i18n="exp2">БОМБА ЭЛИЦУРА–ВАЙДМАНА</span><span class="tag">⟶</span>
   </a>
-  <a href="uiller.html" target="_blank" class="exp-btn">
+  <a href="uiller.html" class="exp-btn">
     <span class="num">03</span><span data-i18n="exp3">ОТЛОЖЕННЫЙ ВЫБОР</span><span class="tag">⟶</span>
   </a>
-  <a href="double_slit_fresnel.html" target="_blank" class="exp-btn">
+  <a href="double_slit_fresnel.html" class="exp-btn">
     <span class="num">04</span><span data-i18n="exp4">ДВЕ ЩЕЛИ · ФРЕНЕЛЬ</span><span class="tag">⟶</span>
   </a>
-  <a href="STO.html" target="_blank" class="exp-btn">
+  <a href="STO.html" class="exp-btn">
     <span class="num">05</span><span data-i18n="exp5">ПАРАДОКС БЛИЗНЕЦОВ</span><span class="tag">⟶</span>
   </a>
 
@@ -244,7 +241,6 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   <span id="hudClock">T+ 00:00:00.0</span>
 </div>
 
-<!-- ═══ ПАСХАЛКА ═══ -->
 <div class="easter" id="easterEgg" role="dialog" aria-modal="true">
   <div class="easter-backdrop" id="easterBackdrop"></div>
   <div class="easter-card">
