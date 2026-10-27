@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050a06'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%23000'/%3E%3Cellipse cx='50' cy='50' rx='40' ry='14' fill='none' stroke='%2333ff77' stroke-width='3' transform='rotate(-15 50 50)'/%3E%3Ccircle cx='50' cy='50' r='25' fill='none' stroke='%23ffb800' stroke-width='1.5' opacity='0.8'/%3E%3C/svg%3E">
+<title>ЦУП-7 · Пульт физических симуляций</title>
+<style>
+:root{
+  --green:#33ff77;
+  --green-dim:#1a6633;
+  --green-deep:#0d3a1c;
+  --amber:#ffb800;
+  --amber-dim:#664a00;
+  --cyan:#00e5ff;
+  --red:#ff3355;
+  --panel-bg:rgba(0,15,5,0.72);
+  --panel-border:rgba(51,255,119,0.35);
+  --glow:0 0 8px rgba(51,255,119,0.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:var(--green);
+  font-family:'Courier New',ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em}
+
+#bh{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:grab;touch-action:none;z-index:0}
+#bh:active{cursor:grabbing}
+
+.scanlines{position:fixed;inset:0;z-index:5;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.28) 3px, rgba(0,0,0,0.28) 4px);
+  mix-blend-mode:multiply}
+.scanlines::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,0.55) 100%)}
+
+.topbar{position:fixed;top:0;left:0;right:0;height:44px;z-index:10;
+  display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  background:linear-gradient(180deg,rgba(0,10,5,.88),rgba(0,10,5,.55));
+  border-bottom:1px solid var(--panel-border);
+  font-size:11px;text-transform:uppercase;text-shadow:var(--glow)}
+.topbar .logo{font-weight:700;letter-spacing:.25em;color:var(--green)}
+.topbar .logo .sub{color:var(--green-dim);font-weight:400;letter-spacing:.12em}
+.topbar .status{display:flex;gap:16px;align-items:center;font-size:10px;letter-spacing:.14em}
+.led{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 8px currentColor;margin-right:7px;
+  vertical-align:middle;position:relative;top:-1px}
+.led.amber{background:var(--amber);color:var(--amber)}
+.led.red{background:var(--red);color:var(--red)}
+.blink{animation:blink 1.2s steps(2,start) infinite}
+@keyframes blink{to{opacity:.2}}
+.topbar .clk{font-variant-numeric:tabular-nums;color:var(--amber);letter-spacing:.22em;
+  text-shadow:0 0 8px rgba(255,184,0,.55)}
+
+/* Кнопка аудио */
+.audio-btn {
+  background: transparent; color: var(--green-dim); border: 1px solid var(--panel-border);
+  font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: .16em;
+  padding: 3px 8px; cursor: pointer; transition: all .12s; text-shadow: none;
+}
+.audio-btn:hover { color: var(--green); border-color: var(--green); }
+.audio-btn.on { color: var(--amber); border-color: var(--amber); background: rgba(255,184,0,.08); }
+
+.lang-switch{display:flex;gap:4px;padding-left:14px; border-left:1px solid var(--panel-border)}
+.lang-btn{background:transparent;color:var(--green-dim);border:1px solid var(--panel-border);
+  font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.16em;
+  padding:3px 8px;cursor:pointer;transition:all .12s;text-shadow:none}
+.lang-btn:hover{color:var(--green);border-color:var(--green)}
+.lang-btn.active{color:var(--amber);border-color:var(--amber);
+  background:rgba(255,184,0,.08);text-shadow:0 0 6px rgba(255,184,0,.5)}
+
+.menu{position:fixed;top:70px;left:18px;z-index:10;width:300px;
+  background:var(--panel-bg);border:1px solid var(--panel-border);
+  padding:14px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  box-shadow:inset 0 0 22px rgba(0,60,20,.5),0 0 28px rgba(0,255,80,.18);
+  font-size:11px;position:relative}
+.menu::before,.menu::after{content:'';position:absolute;width:14px;height:14px;
+  border:1px solid var(--green);pointer-events:none}
+.menu::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.menu::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+.menu-title{color:var(--amber);text-transform:uppercase;letter-spacing:.24em;
+  padding-bottom:9px;margin-bottom:11px;border-bottom:1px dashed var(--panel-border);
+  font-size:10px;text-shadow:0 0 6px rgba(255,184,0,.5)}
+
+.exp-btn{display:block;width:100%;text-align:left;background:transparent;color:var(--green);
+  border:1px solid var(--panel-border);padding:10px 12px;margin-bottom:6px;cursor:pointer;
+  font-family:inherit;font-size:11px;letter-spacing:.05em;text-decoration:none;
+  transition:all .12s;position:relative;text-transform:uppercase;overflow:hidden;
+  min-height: 40px; display: flex; align-items: center;} /* Увеличен touch-area для мобилок */
+.exp-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--amber);transform:scaleY(0);transition:transform .15s;transform-origin:center}
+.exp-btn:hover{background:rgba(51,255,119,0.08);border-color:var(--green);
+  box-shadow:0 0 12px rgba(51,255,119,.3),inset 0 0 10px rgba(51,255,119,.06);color:#aaffcc}
+.exp-btn:hover::before{transform:scaleY(1)}
+.exp-btn:active{transform:translateY(1px)}
+.exp-btn .num{color:var(--amber);margin-right:9px;font-weight:700;
+  text-shadow:0 0 6px rgba(255,184,0,.5)}
+.exp-btn .tag{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-size:10px;color:var(--amber);opacity:.55;transition:opacity .15s}
+.exp-btn:hover .tag{opacity:1;color:var(--amber)}
+
+.menu-foot{margin-top:13px;padding-top:10px;border-top:1px dashed var(--panel-border);
+  font-size:9px;color:var(--green-dim);letter-spacing:.16em;
+  text-transform:uppercase;line-height:1.75}
+
+.hud-bottom{position:fixed;bottom:14px;left:18px;right:18px;z-index:10;
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-size:10px;color:var(--green-dim);text-transform:uppercase;
+  letter-spacing:.14em;pointer-events:none}
+.hud-bottom span{background:rgba(0,10,5,.65);padding:5px 10px;
+  border:1px solid rgba(51,255,119,.18);text-shadow:0 0 5px rgba(51,255,119,.25)}
+.hud-bottom sub{font-size:.75em;vertical-align:sub}
+
+.easter-pulse{
+  position:fixed;width:10px;height:10px;border-radius:50%;
+  pointer-events:none;z-index:50;
+  transform:translate(-50%,-50%) scale(1);
+  border:2px solid var(--green);
+  animation:pulseOut .9s ease-out forwards;
+}
+@keyframes pulseOut{
+  from{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  to  {opacity:0;transform:translate(-50%,-50%) scale(9)}
+}
+.easter{
+  position:fixed;inset:0;z-index:200;display:none;
+  align-items:center;justify-content:center;padding:20px;
+}
+.easter.on{display:flex;animation:easterIn .3s ease-out}
+@keyframes easterIn{from{opacity:0}to{opacity:1}}
+.easter-backdrop{
+  position:absolute;inset:0;background:rgba(0,10,5,.85);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  cursor:pointer;
+}
+.easter-card{
+  position:relative;background:rgba(0,15,5,.96);
+  border:1px solid var(--green);padding:34px 40px;
+  text-align:center;font-family:'Courier New',monospace;color:var(--green);
+  text-shadow:var(--glow);max-width:440px;width:100%;
+  box-shadow:0 0 48px rgba(51,255,119,.45),
+             inset 0 0 48px rgba(0,40,15,.6);
+}
+.easter-card::before,.easter-card::after{
+  content:'';position:absolute;width:20px;height:20px;
+  border:2px solid var(--amber);pointer-events:none;
+  box-shadow:0 0 10px rgba(255,184,0,.5);
+}
+.easter-card::before{top:8px;left:8px;border-right:none;border-bottom:none}
+.easter-card::after{bottom:8px;right:8px;border-left:none;border-top:none}
+.easter-title{
+  font-size:11px;letter-spacing:.32em;color:var(--amber);
+  text-transform:uppercase;margin-bottom:22px;
+  text-shadow:0 0 8px rgba(255,184,0,.6);
+}
+.easter-link{
+  display:inline-flex;align-items:center;gap:14px;
+  text-decoration:none;color:var(--green);
+  padding:14px 24px;border:1px solid var(--green-dim);
+  border-radius:6px;transition:all .2s;
+  background:rgba(51,255,119,.04);
+}
+.easter-link:hover{
+  background:rgba(51,255,119,.14);border-color:var(--green);
+  box-shadow:0 0 24px rgba(51,255,119,.5);transform:scale(1.03);
+}
+.ig-icon{
+  width:34px;height:34px;color:var(--amber);
+  filter:drop-shadow(0 0 8px rgba(255,184,0,.7));
+  flex-shrink:0;
+}
+.ig-handle{
+  font-size:21px;letter-spacing:.04em;font-weight:700;
+  font-family:'Courier New',monospace;
+}
+.easter-sub{
+  font-size:10px;letter-spacing:.2em;color:var(--green-dim);
+  margin-top:20px;text-transform:uppercase;
+}
+.easter-close{
+  margin-top:24px;background:transparent;
+  border:1px solid var(--green-dim);color:var(--green-dim);
+  font-family:inherit;font-size:10px;letter-spacing:.22em;
+  padding:8px 18px;cursor:pointer;transition:all .15s;
+  text-transform:uppercase;
+}
+.easter-close:hover{
+  color:var(--red);border-color:var(--red);
+  box-shadow:0 0 12px rgba(255,51,85,.5);
+}
+
+/* ═══ АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ И ПЛАНШЕТОВ ═══ */
+@media (max-width:820px){
+  .topbar { padding: 0 10px; }
+  .topbar .logo .sub { display: none; }
+  .topbar .status { gap: 8px; font-size: 9px; }
+  .topbar .status span:not(.lang-switch):not(.audio-btn-wrapper) { display: none; }
+  
+  .menu {
+    width: calc(100vw - 20px);
+    left: 10px;
+    top: auto;
+    bottom: 60px;
+    max-height: 45vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px;
+  }
+  
+  .exp-btn {
+    font-size: 10px;
+    padding: 8px 10px;
+    min-height: 44px; /* Идеальный размер для тапа */
+  }
+  
+  .hud-bottom {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    gap: 6px;
+  }
+  .hud-bottom span { padding: 4px 8px; font-size: 9px; }
+  .hud-bottom span:nth-child(2), .hud-bottom span:nth-child(3) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bh"></canvas>
+<div class="scanlines"></div>
+
+<!-- Аудио элементы (укажите пути к вашим mp3 файлам) -->
+<audio id="bgAudio" src="blackhole.mp3" loop></audio>
+<audio id="hoverAudio" src="hover.mp3"></audio>
+
+<div class="topbar">
+  <div class="logo">
+    <span data-i18n="logo">◈ ЦУП-7 ◈</span>
+    <span class="sub" data-i18n="logoSub">// СЕКТОР ГАРГАНТЮА</span>
+  </div>
+  <div class="status">
+    <span><span class="led"></span><span data-i18n="sys">СИСТЕМА: НОРМА</span></span>
+    <span><span class="led amber blink"></span><span data-i18n="link">СВЯЗЬ: КАНАЛ 4</span></span>
+    <span><span class="led red blink"></span><span data-i18n="horizon">ГОРИЗОНТ</span></span>
+    
+    <div class="audio-btn-wrapper">
+      <button class="audio-btn" id="audioToggle" title="Toggle Audio">AUDIO: OFF</button>
+    </div>
+
+    <span class="lang-switch">
+      <button class="lang-btn" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </span>
+  </div>
+  <div class="clk" id="clk">00:00:00</div>
+</div>
+
+<aside class="menu">
+  <div class="menu-title" data-i18n="menuTitle">// ПУЛЬТ · ФИЗИЧЕСКИЕ МОДУЛИ</div>
+  
+  <a href="kvant_last.html" class="exp-btn">
+    <span class="num">01</span><span data-i18n="exp1">КВАНТОВЫЙ ЛАСТИК</span><span class="tag">⟶</span>
+  </a>
+  <a href="elitcurwaidman.html" class="exp-btn">
+    <span class="num">02</span><span data-i18n="exp2">БОМБА ЭЛИЦУРА–ВАЙДМАНА</span><span class="tag">⟶</span>
+  </a>
+  <a href="uiller.html" class="exp-btn">
+    <span class="num">03</span><span data-i18n="exp3">ОТЛОЖЕННЫЙ ВЫБОР</span><span class="tag">⟶</span>
+  </a>
+  <a href="double_slit_fresnel.html" class="exp-btn">
+    <span class="num">04</span><span data-i18n="exp4">ДВЕ ЩЕЛИ · ФРЕНЕЛЬ</span><span class="tag">⟶</span>
+  </a>
+  <a href="STO.html" class="exp-btn">
+    <span class="num">05</span><span data-i18n="exp5">ПАРАДОКС БЛИЗНЕЦОВ</span><span class="tag">⟶</span>
+  </a>
+
+  <div class="menu-foot" data-i18n-html="menuFoot">
+    МОДУЛЬ 0 · ЧЁРНАЯ ДЫРА<br>
+    МЕТРИКА ШВАРЦШИЛЬДА<br>
+    ПЕРЕТАЩИ · ОРБИТА<br>
+    КОЛЕСО · МАСШТАБ
+  </div>
+</aside>
+
+<div class="hud-bottom">
+  <span data-i18n="hud1">СЕКТОР 7-G</span>
+  <span data-i18n-html="hud2">M = 1.0 · r<sub>s</sub> = 2.0</span>
+  <span data-i18n="hud3">ФОТОННАЯ СФЕРА 3.0</span>
+  <span id="hudClock">T+ 00:00:00.0</span>
+</div>
+
+<div class="easter" id="easterEgg" role="dialog" aria-modal="true">
+  <div class="easter-backdrop" id="easterBackdrop"></div>
+  <div class="easter-card">
+    <div class="easter-title" data-i18n="easterTitle">// СИГНАЛ ОБНАРУЖЕН //</div>
+    <a class="easter-link"
+       href="https://instagram.com/david.o.f.f"
+       target="_blank" rel="noopener noreferrer"
+       aria-label="Instagram @david.o.f.f">
+      <svg class="ig-icon" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+      </svg>
+      <span class="ig-handle">@david.o.f.f</span>
+    </a>
+    <div class="easter-sub" data-i18n="easterSub">// контакт с создателем установлен //</div>
+    <button class="easter-close" id="easterClose" data-i18n="easterClose">✕ ЗАКРЫТЬ КАНАЛ</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   I18N
+   ═══════════════════════════════════════════════════════════ */
+const I18N = {
+  ru: {
+    docTitle: 'ЦУП-7 · Пульт физических симуляций',
+    logo: '◈ ЦУП-7 ◈',
+    logoSub: '// СЕКТОР ГАРГАНТЮА',
+    sys: 'СИСТЕМА: НОРМА',
+    link: 'СВЯЗЬ: КАНАЛ 4',
+    horizon: 'ГОРИЗОНТ',
+    menuTitle: '// ПУЛЬТ · ФИЗИЧЕСКИЕ МОДУЛИ',
+    exp1: 'КВАНТОВЫЙ ЛАСТИК',
+    exp2: 'БОМБА ЭЛИЦУРА–ВАЙДМАНА',
+    exp3: 'ОТЛОЖЕННЫЙ ВЫБОР',
+    exp4: 'ДВЕ ЩЕЛИ · ФРЕНЕЛЬ',
+    exp5: 'ПАРАДОКС БЛИЗНЕЦОВ',
+    menuFoot: 'МОДУЛЬ 0 · ЧЁРНАЯ ДЫРА<br>МЕТРИКА ШВАРЦШИЛЬДА<br>ПЕРЕТАЩИ · ОРБИТА<br>КОЛЕСО · МАСШТАБ',
+    hud1: 'СЕКТОР 7-G',
+    hud2: 'M = 1.0 · r<sub>s</sub> = 2.0',
+    hud3: 'ФОТОННАЯ СФЕРА 3.0',
+    easterTitle: '// СИГНАЛ ОБНАРУЖЕН //',
+    easterSub: '// контакт с создателем установлен //',
+    easterClose: '✕ ЗАКРЫТЬ КАНАЛ'
+  },
+  en: {
+    docTitle: 'MCC-7 · Physics Simulation Console',
+    logo: '◈ MCC-7 ◈',
+    logoSub: '// SECTOR GARGANTUA',
+    sys: 'SYSTEM: NOMINAL',
+    link: 'LINK: CHANNEL 4',
+    horizon: 'HORIZON',
+    menuTitle: '// PANEL · PHYSICS MODULES',
+    exp1: 'QUANTUM ERASER',
+    exp2: 'ELITZUR–VAIDMAN BOMB',
+    exp3: 'DELAYED CHOICE',
+    exp4: 'DOUBLE SLIT · FRESNEL',
+    exp5: 'TWIN PARADOX',
+    menuFoot: 'MODULE 0 · BLACK HOLE<br>SCHWARZSCHILD METRIC<br>DRAG · ORBIT<br>WHEEL · ZOOM',
+    hud1: 'SECTOR 7-G',
+    hud2: 'M = 1.0 · r<sub>s</sub> = 2.0',
+    hud3: 'PHOTON SPHERE 3.0',
+    easterTitle: '// SIGNAL DETECTED //',
+    easterSub: '// contact with creator established //',
+    easterClose: '✕ CLOSE CHANNEL'
+  }
+};
+
+let currentLang = localStorage.getItem('lang') || 'ru';
+if (!I18N[currentLang]) currentLang = 'ru';
+
+function applyLang(lang){
+  if (!I18N[lang]) lang = 'ru';
+  const dict = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = dict.docTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (dict[k] != null) el.textContent = dict[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if (dict[k] != null) el.innerHTML = dict[k];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+
+  localStorage.setItem('lang', lang);
+  currentLang = lang;
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+/* ═══════════════════════════════════════════════════════════
+   АУДИО ЛОГИКА (Музыка и звуки наведения)
+   ═══════════════════════════════════════════════════════════ */
+const bgAudio = document.getElementById('bgAudio');
+const hoverAudio = document.getElementById('hoverAudio');
+const audioToggle = document.getElementById('audioToggle');
+let isAudioPlaying = false;
+let audioUnlocked = false;
+
+// Браузеры блокируют автозапуск звука без клика пользователя.
+// Эта функция "разблокирует" аудио при первом клике/тапе в любом месте.
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  
+  // Прогреваем hoverAudio (загружаем и ставим на паузу)
+  hoverAudio.volume = 0.5;
+  hoverAudio.play().then(() => { hoverAudio.pause(); hoverAudio.currentTime = 0; }).catch(()=>{});
+  
+  // Прогреваем bgAudio
+  bgAudio.volume = 0.4; // Фоновая музыка должна быть тише
+  bgAudio.load();
+
+  window.removeEventListener('click', unlockAudio);
+  window.removeEventListener('touchstart', unlockAudio);
+}
+window.addEventListener('click', unlockAudio);
+window.addEventListener('touchstart', unlockAudio);
+
+// Обработчик кнопки включения фоновой музыки
+audioToggle.addEventListener('click', (e) => {
+  e.stopPropagation(); // Чтобы клик не триггерил другие события
+  if (isAudioPlaying) {
+    bgAudio.pause();
+    audioToggle.textContent = 'AUDIO: OFF';
+    audioToggle.classList.remove('on');
+  } else {
+    bgAudio.play().catch(err => console.log('Audio play blocked:', err));
+    audioToggle.textContent = 'AUDIO: ON';
+    audioToggle.classList.add('on');
+  }
+  isAudioPlaying = !isAudioPlaying;
+});
+
+// Звук при наведении на кнопки и ссылки
+const hoverElements = document.querySelectorAll('.exp-btn, .lang-btn, .audio-btn');
+hoverElements.forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    if (!audioUnlocked) return; // Не играем, пока пользователь не кликнул ни разу
+    hoverAudio.currentTime = 0;
+    hoverAudio.play().catch(() => {});
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════
+   ЧЁРНАЯ ДЫРА — WebGL шейдер
+   ═══════════════════════════════════════════════════════════ */
+(function () {
+"use strict";
+
+const canvas = document.getElementById("bh");
+const gl = canvas.getContext("webgl", {
+  antialias: false, alpha: false, depth: false, stencil: false,
+  powerPreference: "high-performance"
+});
+if (!gl) { canvas.style.display = "none"; return; }
+
+const VERT = `
+attribute vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+`;
+
+const FRAG = `
+precision highp float;
+
+uniform vec2  uRes;
+uniform float uTime;
+uniform vec3  uCamPos;
+uniform mat3  uCamBasis;
+
+const float PI = 3.14159265359;
+const float M = 1.0;
+const float RH = 2.0 * M;
+const float R_PHOTON = 3.0 * M;
+const float R_IN = 5.2;
+const float R_OUT = 30.0;
+const int MAXSTEP = 520;
+
+float hash13(vec3 p) {
+  p = fract(p * 0.1031);
+  p += dot(p, p.zyx + 31.32);
+  return fract((p.x + p.y) * p.z);
+}
+vec3 hash33(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}
+float vnoise(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x),
+        mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
+    mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
+        mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y),
+    f.z);
+}
+float fbm(vec3 p) {
+  float s = 0.0, a = 0.55;
+  mat3 rot = mat3(0.8, 0.6, 0.0, -0.6, 0.8, 0.0, 0.0, 0.0, 1.0);
+  for (int i = 0; i < 5; i++) {
+    s += a * vnoise(p);
+    p = rot * p * 2.02 + 11.3;
+    a *= 0.52;
+  }
+  return s;
+}
+
+vec3 starfield(vec3 d) {
+  vec3 col = vec3(0.0);
+  for (int k = 0; k < 3; k++) {
+    float sc = 24.0 + 34.0 * float(k);
+    vec3 p = d * sc;
+    vec3 id = floor(p);
+    vec3 f = fract(p) - 0.5;
+    vec3 h = hash33(id + float(k) * 37.13);
+    float rare = step(0.86, h.x);
+    vec3 off = (hash33(id * 1.71 + 5.7) - 0.5) * 0.65;
+    float dd = length(f - off);
+    float star = exp(-dd * dd * 900.0);
+    vec3 tint = mix(vec3(0.75, 0.85, 1.0), vec3(1.0, 0.85, 0.65), h.z);
+    col += tint * star * rare * (0.35 + h.y);
+  }
+  float neb = fbm(d * 3.0 + 4.0);
+  col += vec3(0.035, 0.05, 0.09) * pow(neb, 2.0);
+  return col;
+}
+
+vec3 blackbody(float T) {
+  T = clamp(T, 1000.0, 30000.0);
+  vec3 c;
+  c.r = 1.0;
+  c.g = clamp(0.39 * log(T) - 2.16, 0.0, 1.0);
+  c.b = clamp(0.66 * log(T) - 4.65, 0.0, 1.0);
+  return c;
+}
+
+vec4 diskSample(vec3 P, vec3 rayDir, float t) {
+  float r = length(P);
+  float ang = atan(P.z, P.x);
+  float omega = 8.0 * pow(r, -1.5);
+  float a = ang - omega * t;
+  vec3 q = vec3(cos(a) * r, 0.35 * sin(r * 0.7 + t * 0.2), sin(a) * r);
+
+  float n1 = fbm(q * 0.55);
+  float n2 = fbm(q * 1.9 + 3.1);
+  float n3 = fbm(q * 5.5 - 7.0);
+  float turb = mix(n1, n2, 0.55);
+  turb = mix(turb, n3, 0.22);
+
+  float inner = smoothstep(R_IN, R_IN * 1.22, r);
+  float outer = 1.0 - smoothstep(R_OUT * 0.55, R_OUT, r);
+  float dens = inner * outer;
+  dens *= 0.28 + 1.15 * turb;
+  dens *= pow(max(R_IN / r, 0.0), 0.85);
+
+  if (dens < 0.004) return vec4(0.0);
+
+  vec3 vdir = normalize(cross(vec3(0, 1, 0), P));
+  float beta = min(sqrt(M / r) / sqrt(max(1.0 - 2.0 * M / r, 0.04)), 0.92);
+  vec3 bv = vdir * beta;
+  vec3 nObs = -normalize(rayDir);
+  float gam = 1.0 / sqrt(max(1.0 - beta * beta, 1e-4));
+  float doppler = 1.0 / (gam * (1.0 - dot(bv, nObs)));
+  float grav = sqrt(max(1.0 - 2.0 * M / r, 0.0));
+  float shift = clamp(doppler * grav, 0.18, 3.4);
+
+  float T = 9500.0 * pow(R_IN / r, 0.75);
+  vec3 emit = blackbody(T * shift);
+
+  float I = dens * pow(shift, 3.2) * 2.1;
+  I *= 0.75 + 0.85 * turb;
+  I += smoothstep(R_IN + 2.6, R_IN, r) * dens * 2.4;
+
+  float alpha = clamp(dens * 1.35, 0.0, 0.96);
+  return vec4(emit * I, alpha);
+}
+
+vec3 aces(vec3 x) {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec3 ro = uCamPos;
+  vec3 rd = normalize(uCamBasis * vec3(uv, 1.65));
+
+  vec3 e1 = normalize(ro);
+  vec3 N = cross(ro, rd);
+  float nl = length(N);
+  vec3 e2 = (nl < 1e-6) ? vec3(0, 1, 0) : normalize(cross(N / nl, e1));
+
+  float vr = dot(rd, e1);
+  float vphi = dot(rd, e2);
+
+  if (abs(vphi) < 1e-5) {
+    gl_FragColor = vec4(vec3(0.0), 1.0);
+    return;
+  }
+
+  float u = 1.0 / length(ro);
+  float du = -u * vr / vphi;
+  float phi = 0.0;
+  float g0 = e1.y;
+
+  vec3 col = vec3(0.0);
+  float transmittance = 1.0;
+  bool captured = false;
+  bool escaped = false;
+  float minR = 1e5;
+
+  for (int i = 0; i < MAXSTEP; i++) {
+    float r = 1.0 / max(u, 1e-5);
+    minR = min(minR, r);
+
+    float h = 0.035;
+    h *= smoothstep(1.6, 4.5, r) * 0.85 + 0.15;
+    h *= 1.0 + 0.55 * smoothstep(R_IN, R_OUT, r);
+
+    float k1u = du;
+    float k1w = -u + 3.0 * M * u * u;
+
+    float ua = u + 0.5 * h * k1u;
+    float wa = du + 0.5 * h * k1w;
+    float k2u = wa;
+    float k2w = -ua + 3.0 * M * ua * ua;
+
+    float ub = u + 0.5 * h * k2u;
+    float wb = du + 0.5 * h * k2w;
+    float k3u = wb;
+    float k3w = -ub + 3.0 * M * ub * ub;
+
+    float uc = u + h * k3u;
+    float wc = du + h * k3w;
+    float k4u = wc;
+    float k4w = -uc + 3.0 * M * uc * uc;
+
+    float un = u + h / 6.0 * (k1u + 2.0 * k2u + 2.0 * k3u + k4u);
+    float wn = du + h / 6.0 * (k1w + 2.0 * k2w + 2.0 * k3w + k4w);
+    float phi2 = phi + h;
+
+    float g1 = cos(phi2) * e1.y + sin(phi2) * e2.y;
+    if (g0 * g1 < 0.0 && transmittance > 0.004) {
+      float tt = clamp(g0 / (g0 - g1), 0.0, 1.0);
+      float ux = mix(u, un, tt);
+      float rx = 1.0 / max(ux, 1e-6);
+
+      if (rx > R_IN * 0.92 && rx < R_OUT) {
+        float phx = mix(phi, phi2, tt);
+        float dux = mix(du, wn, tt);
+        vec3 er = cos(phx) * e1 + sin(phx) * e2;
+        vec3 ep = -sin(phx) * e1 + cos(phx) * e2;
+        vec3 dir = normalize((-dux / (ux * ux)) * er + (1.0 / ux) * ep);
+
+        vec4 d = diskSample(rx * er, dir, uTime);
+        col += transmittance * d.rgb;
+        transmittance *= 1.0 - d.a;
+      }
+    }
+
+    u = un;
+    du = wn;
+    phi = phi2;
+    g0 = g1;
+
+    if (u > 1.0 / RH) { captured = true; break; }
+    if (u < 0.0012 && du < 0.0) { escaped = true; break; }
+  }
+
+  if (!captured && transmittance > 0.004) {
+    float uu = max(u, 1e-6);
+    vec3 er = cos(phi) * e1 + sin(phi) * e2;
+    vec3 ep = -sin(phi) * e1 + cos(phi) * e2;
+    vec3 dd = normalize((-du / (uu * uu)) * er + (1.0 / uu) * ep);
+    col += transmittance * starfield(dd);
+  }
+
+  float ring = exp(-pow(abs(minR - R_PHOTON) * 3.2, 1.6));
+  col += vec3(0.55, 0.72, 1.0) * ring * 0.55 * transmittance;
+
+  col = aces(col * 1.05);
+  col = pow(col, vec3(0.4545));
+
+  vec2 vq = gl_FragCoord.xy / uRes - 0.5;
+  col *= 1.0 - 0.32 * dot(vq, vq);
+
+  float dither = (hash13(vec3(gl_FragCoord.xy, uTime)) - 0.5) / 255.0;
+  gl_FragColor = vec4(max(col + dither, 0.0), 1.0);
+}
+`;
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(s));
+  }
+  return s;
+}
+
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+  console.error(gl.getProgramInfoLog(prog));
+}
+gl.useProgram(prog);
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, "aPos");
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const uRes = gl.getUniformLocation(prog, "uRes");
+const uTime = gl.getUniformLocation(prog, "uTime");
+const uCamPos = gl.getUniformLocation(prog, "uCamPos");
+const uCamBasis = gl.getUniformLocation(prog, "uCamBasis");
+
+const MAX_PIXELS = 1250 * 720;
+let W = 2, H = 2;
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = Math.max(2, Math.round(canvas.clientWidth * dpr));
+  const ch = Math.max(2, Math.round(canvas.clientHeight * dpr));
+  const k = Math.min(1, Math.sqrt(MAX_PIXELS / (cw * ch)));
+  W = Math.max(2, Math.round(cw * k));
+  H = Math.max(2, Math.round(ch * k));
+  canvas.width = W;
+  canvas.height = H;
+  gl.viewport(0, 0, W, H);
+}
+window.addEventListener("resize", resize);
+resize();
+
+let az = 1.15;
+let incl = 0.14;
+let dist = 34.0; // ← ИЗМЕНЕНО ЗДЕСЬ (было 23.0). Камера отодвинута назад.
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+let dragging = false, lastX = 0, lastY = 0, idle = 0;
+
+canvas.addEventListener("pointerdown", (e) => {
+  dragging = true; idle = 0;
+  lastX = e.clientX; lastY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointerup", (e) => {
+  dragging = false;
+  if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  az -= (e.clientX - lastX) * 0.006;
+  incl += (e.clientY - lastY) * 0.005;
+  const TAU = Math.PI * 2;
+  az = (az % TAU + TAU) % TAU;
+  incl = clamp(incl, -1.45, 1.45);
+  lastX = e.clientX; lastY = e.clientY;
+  idle = 0;
+});
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  dist = clamp(dist * (1 + e.deltaY * 0.0011), 9, 65);
+  idle = 0;
+}, { passive: false });
+
+function norm(v) {
+  const l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+}
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
+}
+
+const basisArr = new Float32Array(9);
+let prev = performance.now() * 0.001;
+
+function frame(now) {
+  const t = now * 0.001;
+  const dt = Math.min(0.05, Math.max(0.0001, t - prev));
+  prev = t;
+
+  if (!dragging) {
+    idle += dt;
+    if (idle > 1.2) az += dt * 0.06;
+  }
+
+  const ci = Math.cos(incl), si = Math.sin(incl);
+  const cp = [
+    dist * ci * Math.cos(az),
+    dist * si,
+    dist * ci * Math.sin(az)
+  ];
+
+  const f = norm([-cp[0], -cp[1], -cp[2]]);
+  let r = cross(f, [0, 1, 0]);
+  if (Math.hypot(r[0], r[1], r[2]) < 1e-5) r = cross(f, [1, 0, 0]);
+  r = norm(r);
+  const up = cross(r, f);
+
+  basisArr[0] = r[0]; basisArr[1] = r[1]; basisArr[2] = r[2];
+  basisArr[3] = up[0]; basisArr[4] = up[1]; basisArr[5] = up[2];
+  basisArr[6] = f[0]; basisArr[7] = f[1]; basisArr[8] = f[2];
+
+  gl.uniform2f(uRes, W, H);
+  gl.uniform1f(uTime, t);
+  gl.uniform3f(uCamPos, cp[0], cp[1], cp[2]);
+  gl.uniformMatrix3fv(uCamBasis, false, basisArr);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   ЧАСЫ
+   ═══════════════════════════════════════════════════════════ */
+(function(){
+  const clk = document.getElementById('clk');
+  const hud = document.getElementById('hudClock');
+  const start = performance.now();
+  function tick(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    clk.textContent = hh+':'+mm+':'+ss;
+
+    const el = (performance.now() - start) / 1000;
+    const eh = String(Math.floor(el/3600)).padStart(2,'0');
+    const em = String(Math.floor(el/60)%60).padStart(2,'0');
+    const es = (el % 60).toFixed(1).padStart(4,'0');
+    hud.textContent = 'T+ '+eh+':'+em+':'+es;
+
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   ПАСХАЛКА: 7 тапов в центр чёрной дыры
+   ═══════════════════════════════════════════════════════════ */
+(function(){
+  const REQUIRED_TAPS   = 7;
+  const RESET_MS        = 5000;
+  const HIT_RADIUS_FRAC = 0.18;
+  const MOVE_TOL        = 10;
+  const TIME_TOL_MS     = 420;
+
+  const bhCanvas = document.getElementById('bh');
+  const easter   = document.getElementById('easterEgg');
+  if (!bhCanvas || !easter) return;
+
+  let taps = 0, resetTimer = null;
+  let downX = 0, downY = 0, downT = 0;
+
+  bhCanvas.addEventListener('pointerdown', e => {
+    downX = e.clientX; downY = e.clientY; downT = performance.now();
+  });
+
+  bhCanvas.addEventListener('pointerup', e => {
+    if (performance.now() - downT > TIME_TOL_MS) return;
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > MOVE_TOL) return;
+
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const r  = Math.min(window.innerWidth, window.innerHeight) * HIT_RADIUS_FRAC;
+    if (Math.hypot(e.clientX - cx, e.clientY - cy) > r) return;
+
+    taps++;
+    pulse(e.clientX, e.clientY, taps / REQUIRED_TAPS);
+
+    if (resetTimer) clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => { taps = 0; }, RESET_MS);
+
+    if (taps >= REQUIRED_TAPS) {
+      taps = 0;
+      if (resetTimer) clearTimeout(resetTimer);
+      easter.classList.add('on');
+    }
+  });
+
+  function pulse(x, y, p){
+    const el = document.createElement('div');
+    el.className = 'easter-pulse';
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    const glow = 10 + p * 24;
+    el.style.boxShadow = `0 0 ${glow}px rgba(51,255,119,${0.5 + p * 0.5})`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 950);
+  }
+
+  function hide(){
+    easter.classList.remove('on');
+  }
+  document.getElementById('easterClose').addEventListener('click', hide);
+  document.getElementById('easterBackdrop').addEventListener('click', hide);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && easter.classList.contains('on')) hide();
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   СТАРТ
+   ═══════════════════════════════════════════════════════════ */
+applyLang(currentLang);
+</script>
+</body>
+</html>

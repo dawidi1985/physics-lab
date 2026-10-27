@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ЦУП-7 · Пульт физических симуляций</title>
+
+<!-- Встроенная SVG-иконка (Черная дыра) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050a06'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%23000'/%3E%3Cellipse cx='50' cy='50' rx='40' ry='14' fill='none' stroke='%2333ff77' stroke-width='3' transform='rotate(-15 50 50)'/%3E%3Ccircle cx='50' cy='50' r='25' fill='none' stroke='%23ffb800' stroke-width='1.5' opacity='0.8'/%3E%3C/svg%3E">
+
 <style>
 :root{
   --green:#33ff77;
@@ -84,7 +88,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   border:1px solid var(--panel-border);padding:10px 12px;margin-bottom:6px;cursor:pointer;
   font-family:inherit;font-size:11px;letter-spacing:.05em;text-decoration:none;
   transition:all .12s;position:relative;text-transform:uppercase;overflow:hidden;
-  min-height: 40px; display: flex; align-items: center;} /* Увеличен touch-area для мобилок */
+  min-height: 40px; display: flex; align-items: center;}
 .exp-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
   background:var(--amber);transform:scaleY(0);transition:transform .15s;transform-origin:center}
 .exp-btn:hover{background:rgba(51,255,119,0.08);border-color:var(--green);
@@ -108,6 +112,37 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
 .hud-bottom span{background:rgba(0,10,5,.65);padding:5px 10px;
   border:1px solid rgba(51,255,119,.18);text-shadow:0 0 5px rgba(51,255,119,.25)}
 .hud-bottom sub{font-size:.75em;vertical-align:sub}
+
+/* Уведомление о звуке */
+.audio-note {
+  position: fixed;
+  bottom: 60px; /* Над нижней панелью */
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0, 15, 5, 0.9);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 10px 20px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(255, 184, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.audio-note.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 
 .easter-pulse{
   position:fixed;width:10px;height:10px;border-radius:50%;
@@ -219,6 +254,16 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   }
   .hud-bottom span { padding: 4px 8px; font-size: 9px; }
   .hud-bottom span:nth-child(2), .hud-bottom span:nth-child(3) { display: none; }
+
+  /* Мобильное уведомление о звуке */
+  .audio-note {
+    font-size: 9px;
+    white-space: normal;
+    text-align: center;
+    width: 90vw;
+    justify-content: center;
+    bottom: 75px;
+  }
 }
 </style>
 </head>
@@ -227,7 +272,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
 <canvas id="bh"></canvas>
 <div class="scanlines"></div>
 
-<!-- Аудио элементы (укажите пути к вашим mp3 файлам) -->
+<!-- Аудио элементы -->
 <audio id="bgAudio" src="blackhole.mp3" loop></audio>
 <audio id="hoverAudio" src="hover.mp3"></audio>
 
@@ -279,6 +324,12 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
     КОЛЕСО · МАСШТАБ
   </div>
 </aside>
+
+<!-- Уведомление о звуке -->
+<div class="audio-note" id="audioNote">
+  <span class="led amber blink"></span>
+  <span data-i18n="audioNote">// ТЕЛЕМЕТРИЧЕСКИЙ ЗВУК ЧЁРНОЙ ДЫРЫ В КОСМОСЕ //</span>
+</div>
 
 <div class="hud-bottom">
   <span data-i18n="hud1">СЕКТОР 7-G</span>
@@ -333,7 +384,8 @@ const I18N = {
     hud3: 'ФОТОННАЯ СФЕРА 3.0',
     easterTitle: '// СИГНАЛ ОБНАРУЖЕН //',
     easterSub: '// контакт с создателем установлен //',
-    easterClose: '✕ ЗАКРЫТЬ КАНАЛ'
+    easterClose: '✕ ЗАКРЫТЬ КАНАЛ',
+    audioNote: '// ТЕЛЕМЕТРИЧЕСКИЙ ЗВУК ЧЁРНОЙ ДЫРЫ В КОСМОСЕ //'
   },
   en: {
     docTitle: 'MCC-7 · Physics Simulation Console',
@@ -354,7 +406,8 @@ const I18N = {
     hud3: 'PHOTON SPHERE 3.0',
     easterTitle: '// SIGNAL DETECTED //',
     easterSub: '// contact with creator established //',
-    easterClose: '✕ CLOSE CHANNEL'
+    easterClose: '✕ CLOSE CHANNEL',
+    audioNote: '// TELEMETRIC SOUND OF A BLACK HOLE IN SPACE //'
   }
 };
 
@@ -388,26 +441,25 @@ document.querySelectorAll('.lang-btn').forEach(b => {
 });
 
 /* ═══════════════════════════════════════════════════════════
-   АУДИО ЛОГИКА (Музыка и звуки наведения)
+   АУДИО ЛОГИКА
    ═══════════════════════════════════════════════════════════ */
 const bgAudio = document.getElementById('bgAudio');
 const hoverAudio = document.getElementById('hoverAudio');
 const audioToggle = document.getElementById('audioToggle');
+const audioNote = document.getElementById('audioNote');
 let isAudioPlaying = false;
 let audioUnlocked = false;
+let noteTimeout = null;
 
-// Браузеры блокируют автозапуск звука без клика пользователя.
-// Эта функция "разблокирует" аудио при первом клике/тапе в любом месте.
+// Разблокировка аудио при первом клике
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
   
-  // Прогреваем hoverAudio (загружаем и ставим на паузу)
   hoverAudio.volume = 0.5;
   hoverAudio.play().then(() => { hoverAudio.pause(); hoverAudio.currentTime = 0; }).catch(()=>{});
   
-  // Прогреваем bgAudio
-  bgAudio.volume = 0.4; // Фоновая музыка должна быть тише
+  bgAudio.volume = 0.4;
   bgAudio.load();
 
   window.removeEventListener('click', unlockAudio);
@@ -416,26 +468,36 @@ function unlockAudio() {
 window.addEventListener('click', unlockAudio);
 window.addEventListener('touchstart', unlockAudio);
 
-// Обработчик кнопки включения фоновой музыки
+// Включение/выключение фоновой музыки
 audioToggle.addEventListener('click', (e) => {
-  e.stopPropagation(); // Чтобы клик не триггерил другие события
+  e.stopPropagation(); 
+  
   if (isAudioPlaying) {
     bgAudio.pause();
     audioToggle.textContent = 'AUDIO: OFF';
     audioToggle.classList.remove('on');
+    audioNote.classList.remove('show');
+    if (noteTimeout) clearTimeout(noteTimeout);
   } else {
     bgAudio.play().catch(err => console.log('Audio play blocked:', err));
     audioToggle.textContent = 'AUDIO: ON';
     audioToggle.classList.add('on');
+    
+    // Показываем уведомление
+    audioNote.classList.add('show');
+    if (noteTimeout) clearTimeout(noteTimeout);
+    noteTimeout = setTimeout(() => {
+      audioNote.classList.remove('show');
+    }, 6000);
   }
   isAudioPlaying = !isAudioPlaying;
 });
 
-// Звук при наведении на кнопки и ссылки
+// Звук при наведении
 const hoverElements = document.querySelectorAll('.exp-btn, .lang-btn, .audio-btn');
 hoverElements.forEach(el => {
   el.addEventListener('mouseenter', () => {
-    if (!audioUnlocked) return; // Не играем, пока пользователь не кликнул ни разу
+    if (!audioUnlocked) return;
     hoverAudio.currentTime = 0;
     hoverAudio.play().catch(() => {});
   });
@@ -739,7 +801,7 @@ resize();
 
 let az = 1.15;
 let incl = 0.14;
-let dist = 34.0; // ← ИЗМЕНЕНО ЗДЕСЬ (было 23.0). Камера отодвинута назад.
+let dist = 34.0; // Отодвинутая камера
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 let dragging = false, lastX = 0, lastY = 0, idle = 0;
