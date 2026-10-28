@@ -3,11 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050a06'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%23000'/%3E%3Cellipse cx='50' cy='50' rx='40' ry='14' fill='none' stroke='%2333ff77' stroke-width='3' transform='rotate(-15 50 50)'/%3E%3Ccircle cx='50' cy='50' r='25' fill='none' stroke='%23ffb800' stroke-width='1.5' opacity='0.8'/%3E%3C/svg%3E">
 <title>ЦУП-7 · Пульт физических симуляций</title>
 
 <!-- Встроенная SVG-иконка (Черная дыра) -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050a06'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%23000'/%3E%3Cellipse cx='50' cy='50' rx='40' ry='14' fill='none' stroke='%2333ff77' stroke-width='3' transform='rotate(-15 50 50)'/%3E%3Ccircle cx='50' cy='50' r='25' fill='none' stroke='%23ffb800' stroke-width='1.5' opacity='0.8'/%3E%3C/svg%3E">
+
+<!-- Open Graph для красивого отображения в соцсетях -->
+<meta property="og:title" content="ЦУП-7 · Физические симуляции">
+<meta property="og:description" content="Черная дыра в реальном времени и 5 квантовых экспериментов прямо в браузере.">
+<meta property="og:image" content="https://blackh0le.ru/preview.jpg">
+<meta property="og:url" content="https://blackh0le.ru">
+<meta property="og:type" content="website">
 
 <style>
 :root{
@@ -106,6 +112,57 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   font-size:9px;color:var(--green-dim);letter-spacing:.16em;
   text-transform:uppercase;line-height:1.75}
 
+/* ═══ ПАНЕЛЬ "ПОДЕЛИТЬСЯ" ═══ */
+.share-panel {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--panel-border);
+  text-align: center;
+}
+.share-title {
+  color: var(--amber);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.share-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.share-btn {
+  background: transparent;
+  color: var(--green);
+  border: 1px solid var(--green-dim);
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.share-btn:hover {
+  background: rgba(51,255,119,0.15);
+  border-color: var(--green);
+  box-shadow: 0 0 10px rgba(51,255,119,0.4);
+}
+.feedback-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 9px;
+}
+.feedback-links a {
+  color: var(--green-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.feedback-links a:hover {
+  color: var(--amber);
+}
+
 .hud-bottom{position:fixed;bottom:14px;left:18px;right:18px;z-index:10;
   display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
   font-size:10px;color:var(--green-dim);text-transform:uppercase;
@@ -117,7 +174,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
 /* Уведомление о звуке */
 .audio-note {
   position: fixed;
-  bottom: 60px; /* Над нижней панелью */
+  bottom: 60px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: rgba(0, 15, 5, 0.9);
@@ -139,11 +196,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   gap: 10px;
   white-space: nowrap;
 }
-
-.audio-note.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+.audio-note.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 .easter-pulse{
   position:fixed;width:10px;height:10px;border-radius:50%;
@@ -235,7 +288,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
     left: 10px;
     top: auto;
     bottom: 60px;
-    max-height: 45vh;
+    max-height: 50vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 10px;
@@ -244,7 +297,7 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   .exp-btn {
     font-size: 10px;
     padding: 8px 10px;
-    min-height: 44px; /* Идеальный размер для тапа */
+    min-height: 44px;
   }
   
   .hud-bottom {
@@ -256,7 +309,6 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   .hud-bottom span { padding: 4px 8px; font-size: 9px; }
   .hud-bottom span:nth-child(2), .hud-bottom span:nth-child(3) { display: none; }
 
-  /* Мобильное уведомление о звуке */
   .audio-note {
     font-size: 9px;
     white-space: normal;
@@ -324,6 +376,20 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
     ПЕРЕТАЩИ · ОРБИТА<br>
     КОЛЕСО · МАСШТАБ
   </div>
+
+  <!-- ПАНЕЛЬ "ПОДЕЛИТЬСЯ" -->
+  <div class="share-panel">
+    <div class="share-title" data-i18n="shareTitle">// ПОДЕЛИТЬСЯ //</div>
+    <div class="share-buttons">
+      <a href="https://t.me/share/url?url=https://blackh0le.ru&text=Интерактивная модель черной дыры и квантовых экспериментов" target="_blank" class="share-btn">TG</a>
+      <a href="https://vk.com/share.php?url=https://blackh0le.ru" target="_blank" class="share-btn">VK</a>
+      <a href="https://twitter.com/intent/tweet?url=https://blackh0le.ru&text=Крутая физика в браузере!" target="_blank" class="share-btn">X</a>
+    </div>
+    <div class="feedback-links">
+      <a href="https://github.com/dawidi1985/physics-lab" target="_blank" data-i18n="sourceCode">[ ИСХОДНЫЙ КОД ]</a>
+      <a href="https://instagram.com/david.o.f.f" target="_blank" data-i18n="feedback">[ СВЯЗЬ С АВТОРОМ ]</a>
+    </div>
+  </div>
 </aside>
 
 <!-- Уведомление о звуке -->
@@ -386,7 +452,10 @@ const I18N = {
     easterTitle: '// СИГНАЛ ОБНАРУЖЕН //',
     easterSub: '// контакт с создателем установлен //',
     easterClose: '✕ ЗАКРЫТЬ КАНАЛ',
-    audioNote: '// ТЕЛЕМЕТРИЧЕСКИЙ ЗВУК ЧЁРНОЙ ДЫРЫ В КОСМОСЕ //'
+    audioNote: '// ТЕЛЕМЕТРИЧЕСКИЙ ЗВУК ЧЁРНОЙ ДЫРЫ В КОСМОСЕ //',
+    shareTitle: '// ПОДЕЛИТЬСЯ //',
+    sourceCode: '[ ИСХОДНЫЙ КОД ]',
+    feedback: '[ СВЯЗЬ С АВТОРОМ ]'
   },
   en: {
     docTitle: 'MCC-7 · Physics Simulation Console',
@@ -408,7 +477,10 @@ const I18N = {
     easterTitle: '// SIGNAL DETECTED //',
     easterSub: '// contact with creator established //',
     easterClose: '✕ CLOSE CHANNEL',
-    audioNote: '// TELEMETRIC SOUND OF A BLACK HOLE IN SPACE //'
+    audioNote: '// TELEMETRIC SOUND OF A BLACK HOLE IN SPACE //',
+    shareTitle: '// SHARE //',
+    sourceCode: '[ SOURCE CODE ]',
+    feedback: '[ CONTACT AUTHOR ]'
   }
 };
 
@@ -452,27 +524,21 @@ let isAudioPlaying = false;
 let audioUnlocked = false;
 let noteTimeout = null;
 
-// Разблокировка аудио при первом клике
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  
   hoverAudio.volume = 0.5;
   hoverAudio.play().then(() => { hoverAudio.pause(); hoverAudio.currentTime = 0; }).catch(()=>{});
-  
   bgAudio.volume = 0.4;
   bgAudio.load();
-
   window.removeEventListener('click', unlockAudio);
   window.removeEventListener('touchstart', unlockAudio);
 }
 window.addEventListener('click', unlockAudio);
 window.addEventListener('touchstart', unlockAudio);
 
-// Включение/выключение фоновой музыки
 audioToggle.addEventListener('click', (e) => {
   e.stopPropagation(); 
-  
   if (isAudioPlaying) {
     bgAudio.pause();
     audioToggle.textContent = 'AUDIO: OFF';
@@ -484,7 +550,6 @@ audioToggle.addEventListener('click', (e) => {
     audioToggle.textContent = 'AUDIO: ON';
     audioToggle.classList.add('on');
     
-    // Показываем уведомление
     audioNote.classList.add('show');
     if (noteTimeout) clearTimeout(noteTimeout);
     noteTimeout = setTimeout(() => {
@@ -494,8 +559,7 @@ audioToggle.addEventListener('click', (e) => {
   isAudioPlaying = !isAudioPlaying;
 });
 
-// Звук при наведении
-const hoverElements = document.querySelectorAll('.exp-btn, .lang-btn, .audio-btn');
+const hoverElements = document.querySelectorAll('.exp-btn, .lang-btn, .audio-btn, .share-btn, .feedback-links a');
 hoverElements.forEach(el => {
   el.addEventListener('mouseenter', () => {
     if (!audioUnlocked) return;
