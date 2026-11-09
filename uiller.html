@@ -20,107 +20,144 @@
 <style>
 :root{--bg:#07080c;--panel:#101319;--line:#232a36;--text:#e7ecf5;--muted:#8b98ab;--blue:#5aa2ff;--amber:#fbbf24}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:24px 16px 48px}
-.wrap{width:100%;max-width:1150px}
-.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px}
-h1{margin:0;font-size:25px}
-h2{margin:0 0 10px;font-size:16px}
-.lead{color:var(--muted);margin:8px 0 16px;line-height:1.55;max-width:88ch}
-.lang-switch{display:flex;gap:4px;flex-shrink:0}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{width:100%;height:100%;display:flex;flex-direction:column;padding:12px 16px;gap:10px;max-width:1600px;margin:0 auto}
+
+/* Шапка с текстом */
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;gap:14px;flex-wrap:wrap}
+h1{margin:0 0 6px;font-size:20px}
+.lead{color:var(--muted);margin:0;font-size:13px;line-height:1.45;max-width:1100px;}
+.lead b{color:var(--text)}
+h2{margin:0 0 10px;font-size:14px;color:var(--text)}
+.lang-switch{display:flex;gap:4px;flex-shrink:0;margin-top:2px;}
 .lang-btn{background:#171d27;color:#8b98ab;border:1px solid #2b3547;border-radius:8px;
   padding:6px 12px;font-family:ui-monospace,monospace;font-size:12px;font-weight:650;
   cursor:pointer;transition:all .15s;letter-spacing:.08em}
 .lang-btn:hover{background:#202836;color:#e7ecf5}
 .lang-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-canvas{display:block;width:100%;height:430px;touch-action:none}
-canvas.front{height:280px}
-.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-top:14px}
-@media(max-width:920px){.layout{grid-template-columns:1fr}canvas{height:340px}}
-.controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-.row{margin-bottom:11px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-label{color:#b9c5d6;font-size:13.5px}
+
+/* ═══ НОВЫЙ МАКЕТ (ДВЕ КОЛОНКИ) ═══ */
+.dashboard{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;flex:1;min-height:0;}
+.left-col{display:flex;flex-direction:column;gap:10px;min-height:0;}
+.right-col{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:4px;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+
+/* Уменьшаем график со щелями */
+.main-canvas{flex:0 0 auto; height: 320px; position:relative;}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+.front-canvas-card{flex:1;min-height:160px;}
+
+/* ═══ КОМПАКТНЫЕ КОНТРОЛЫ ═══ */
+.controls{padding:12px}
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.row{display:flex;flex-direction:column;gap:4px;}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)}
 .val{font-family:ui-monospace,monospace;color:var(--blue);font-weight:650}
-input[type=range]{width:100%;accent-color:var(--blue);height:22px}
-.btns{display:flex;gap:9px;margin-top:10px}
-button{flex:1;background:#171d27;color:var(--text);border:1px solid #2b3547;border-radius:10px;padding:10px 12px;font:inherit;font-weight:550;cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--blue);height:16px;margin:0;}
+.btns{display:flex;gap:6px;}
+button{flex:1;background:#171d27;color:var(--text);border:1px solid #2b3547;border-radius:8px;padding:8px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:0.15s;}
 button:hover{background:#202836}
-button.primary{background:#2563eb;border-color:#2563eb}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.stat{background:#0c1017;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-.stat .v{font-family:ui-monospace,monospace;font-size:16px;font-weight:650;margin-top:3px}
-.note{color:var(--muted);font-size:13.8px;line-height:1.65}
+button.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+button.primary:hover{background:#3b82f6}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;padding:12px 12px 0 12px;}
+.stat{background:#0c1017;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:ui-monospace,monospace;font-size:15px;font-weight:650;margin-top:2px}
+
+.note{color:var(--muted);font-size:12px;line-height:1.5;padding:0 12px 12px 12px}
 .note b{color:var(--text)}
-.small{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0}
-.legend{display:flex;gap:14px;margin-top:10px;font-size:13px}
+
+.legend-info{padding:10px 12px;background:rgba(0,0,0,0.2);border-top:1px solid var(--line);font-size:12px;}
+.small{color:var(--muted);line-height:1.5;margin:0 0 8px 0}
+.legend{display:flex;gap:14px;font-size:12px}
 .legend span{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+
+@media(max-width:1000px){
+  html,body{overflow:auto;height:auto;}
+  .wrap{height:auto;padding:16px;}
+  .dashboard{display:flex;flex-direction:column;}
+  .left-col{min-height:auto;}
+  .main-canvas{height:300px;}
+  .front-canvas-card{height:220px;flex:none;}
+  .right-col{overflow:visible;padding-right:0;}
+  .page-head{flex-direction:column;}
+  .lang-switch{margin-top:10px;}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<div class="page-head">
-  <h1 data-i18n="h1">Эксперимент Уилера: отложенный выбор</h1>
-  <div class="lang-switch">
-    <button class="lang-btn" data-lang="ru">RU</button>
-    <button class="lang-btn" data-lang="en">EN</button>
-  </div>
-</div>
-<p class="lead" data-i18n-html="lead">Ключевая идея: решение «измерять ли путь частицы» принимается <b>после того, как частица уже прошла через щели</b>, но до её попадания на экран. Тем не менее статистика попаданий показывает: если путь измерен — интерференции нет; если не измерен — есть. Это демонстрирует, что квантовое поведение определяется способом наблюдения, даже если выбор сделан с запозданием.</p>
-
-<div class="card"><canvas id="c"></canvas></div>
-
-<div class="layout">
-  <div class="card"><canvas id="front" class="front"></canvas></div>
-  <div class="controls">
-    <h2 data-i18n="frontHead">Экран — вид спереди</h2>
-    <p class="small" data-i18n-html="frontNote">Каждая точка — одно попадание.<span style="color:#fbbf24">Жёлтые</span> — путь измерен (частица ведёт себя как частица).<span style="color:#5aa2ff">Синие</span> — путь не измерен (частица ведёт себя как волна).</p>
-    <div class="legend">
-      <span><span class="dot" style="background:#fbbf24"></span><span data-i18n="legendWhich">Измерение пути</span></span>
-      <span><span class="dot" style="background:#5aa2ff"></span><span data-i18n="legendNo">Без измерения</span></span>
+  <div class="page-head">
+    <div>
+      <h1 data-i18n="h1">Эксперимент Уилера: отложенный выбор</h1>
+      <p class="lead" data-i18n-html="lead">Ключевая идея: решение «измерять ли путь частицы» принимается <b>после того, как частица уже прошла через щели</b>, но до её попадания на экран. Тем не менее статистика попаданий показывает: если путь измерен — интерференции нет; если не измерен — есть. Это демонстрирует, что квантовое поведение определяется способом наблюдения, даже если выбор сделан с запозданием.</p>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="en">EN</button>
     </div>
   </div>
-</div>
 
-<div class="layout">
-<div class="controls">
-  <h2 data-i18n="paramsHead">Параметры</h2>
-  <div class="row"><div class="top"><label for="lambda" data-i18n="lambdaLbl">Длина волны λ</label><span class="val" id="lambdaV">550 нм</span></div><input id="lambda" type="range" min="380" max="700" step="1" value="550"></div>
-  <div class="row"><div class="top"><label for="d" data-i18n="dLbl">Расстояние между щелями d</label><span class="val" id="dV">80 мкм</span></div><input id="d" type="range" min="10" max="400" step="1" value="80"></div>
-  <div class="row"><div class="top"><label for="a" data-i18n="aLbl">Ширина щели a</label><span class="val" id="aV">12 мкм</span></div><input id="a" type="range" min="2" max="80" step="1" value="12"></div>
-  <div class="row"><div class="top"><label for="L" data-i18n="LLbl">Расстояние до экрана L</label><span class="val" id="LV">25 мм</span></div><input id="L" type="range" min="1" max="1000" step="1" value="25"></div>
-  <div class="row"><div class="top"><label for="rate" data-i18n="rateLbl">Скорость частиц</label><span class="val" id="rateV">30 частиц/с</span></div><input id="rate" type="range" min="1" max="200" step="1" value="30"></div>
-  <div class="row"><div class="top"><label for="prob" data-i18n="probLbl">Доля частиц с измерением пути</label><span class="val" id="probV">50%</span></div><input id="prob" type="range" min="0" max="100" step="1" value="50"></div>
-  <div class="btns">
-    <button id="fire" class="primary" data-i18n="fire">Пуск</button>
-    <button id="pause" data-i18n="pause">Пауза</button>
-    <button id="clear" data-i18n="clear">Очистить</button>
-  </div>
-</div>
+  <div class="dashboard">
+    <!-- ЛЕВАЯ КОЛОНКА: ВИЗУАЛИЗАЦИЯ -->
+    <div class="left-col">
+      <!-- Уменьшенная схема с щелями -->
+      <div class="card main-canvas">
+        <canvas id="c"></canvas>
+      </div>
+      <!-- Вид спереди -->
+      <div class="card front-canvas-card">
+        <canvas id="front"></canvas>
+        <div class="legend-info">
+          <p class="small" data-i18n-html="frontNote">Каждая точка — одно попадание. <span style="color:#fbbf24">Жёлтые</span> — путь измерен (частица ведёт себя как частица). <span style="color:#5aa2ff">Синие</span> — путь не измерен (частица ведёт себя как волна).</p>
+          <div class="legend">
+            <span><span class="dot" style="background:#fbbf24"></span><span data-i18n="legendWhich">Измерение пути</span></span>
+            <span><span class="dot" style="background:#5aa2ff"></span><span data-i18n="legendNo">Без измерения</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<div>
-  <div class="stats">
-    <div class="stat"><div class="k" data-i18n="stTotal">Всего частиц</div><div class="v" id="nTotal">0</div></div>
-    <div class="stat"><div class="k" data-i18n="stWhich">Путь измерен</div><div class="v" id="nWhich">0</div></div>
-    <div class="stat"><div class="k" data-i18n="stNo">Без измерения</div><div class="v" id="nInterf">0</div></div>
-  </div>
-  <div class="note" data-i18n-html="note">
-    <b>Почему это важно:</b> в схеме отложенного выбора решение принимается в точке, которую частица проходит <i>уже после щелей</i>. Классическая интуиция говорит, что поведение частицы должно быть определено в момент прохождения щелей. Но эксперимент показывает: итоговое распределение определяется выбором наблюдателя, даже если он сделан позже. При 50% вы увидите <b>оба</b> типа точек одновременно — это и есть наглядная демонстрация.
-  </div>
-</div>
-</div>
+    <!-- ПРАВАЯ КОЛОНКА: ПАРАМЕТРЫ И СТАТИСТИКА -->
+    <div class="right-col">
+      <div class="card controls">
+        <h2 data-i18n="paramsHead">Параметры</h2>
+        <div class="controls-grid">
+          <div class="row"><div class="top"><label for="lambda" data-i18n="lambdaLbl">Длина волны λ</label><span class="val" id="lambdaV">550 нм</span></div><input id="lambda" type="range" min="380" max="700" step="1" value="550"></div>
+          <div class="row"><div class="top"><label for="d" data-i18n="dLbl">Расстояние d</label><span class="val" id="dV">80 мкм</span></div><input id="d" type="range" min="10" max="400" step="1" value="80"></div>
+          <div class="row"><div class="top"><label for="a" data-i18n="aLbl">Ширина щели a</label><span class="val" id="aV">12 мкм</span></div><input id="a" type="range" min="2" max="80" step="1" value="12"></div>
+          <div class="row"><div class="top"><label for="L" data-i18n="LLbl">Расстояние L</label><span class="val" id="LV">25 мм</span></div><input id="L" type="range" min="1" max="1000" step="1" value="25"></div>
+          <div class="row"><div class="top"><label for="rate" data-i18n="rateLbl">Скорость частиц</label><span class="val" id="rateV">30 /с</span></div><input id="rate" type="range" min="1" max="200" step="1" value="30"></div>
+          <div class="row"><div class="top"><label for="prob" data-i18n="probLbl">Доля с измерением</label><span class="val" id="probV">50%</span></div><input id="prob" type="range" min="0" max="100" step="1" value="50"></div>
+        </div>
+        <div class="btns">
+          <button id="fire" class="primary" data-i18n="fire">Пуск</button>
+          <button id="pause" data-i18n="pause">Пауза</button>
+          <button id="clear" data-i18n="clear">Очистить</button>
+        </div>
+      </div>
 
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><div class="k" data-i18n="stTotal">Всего</div><div class="v" id="nTotal">0</div></div>
+          <div class="stat"><div class="k" data-i18n="stWhich">Измерено</div><div class="v" id="nWhich">0</div></div>
+          <div class="stat"><div class="k" data-i18n="stNo">Без изм.</div><div class="v" id="nInterf">0</div></div>
+        </div>
+        <div class="note" data-i18n-html="note">
+          <b>Почему это важно:</b> в схеме отложенного выбора решение принимается в точке, которую частица проходит <i>уже после щелей</i>. Классическая интуиция говорит, что поведение частицы должно быть определено в момент прохождения щелей. Но эксперимент показывает: итоговое распределение определяется выбором наблюдателя, даже если он сделан позже.
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 "use strict";
 
-/* ══════════════════════════════════════════════════════════════════
-   I18N
-   ══════════════════════════════════════════════════════════════════ */
 const I18N = {
   ru: {
     docTitle: 'Эксперимент Уилера: отложенный выбор',
@@ -132,29 +169,22 @@ const I18N = {
     legendNo: 'Без измерения',
     paramsHead: 'Параметры',
     lambdaLbl: 'Длина волны λ',
-    dLbl: 'Расстояние между щелями d',
+    dLbl: 'Расстояние d',
     aLbl: 'Ширина щели a',
-    LLbl: 'Расстояние до экрана L',
+    LLbl: 'Расстояние L',
     rateLbl: 'Скорость частиц',
-    probLbl: 'Доля частиц с измерением пути',
+    probLbl: 'Доля с измерением',
     fire: 'Пуск',
     pause: 'Пауза',
     pauseAlt: 'Продолжить',
     run: 'Идёт',
     clear: 'Очистить',
-    stTotal: 'Всего частиц',
-    stWhich: 'Путь измерен',
-    stNo: 'Без измерения',
-    note: '<b>Почему это важно:</b> в схеме отложенного выбора решение принимается в точке, которую частица проходит <i>уже после щелей</i>. Классическая интуиция говорит, что поведение частицы должно быть определено в момент прохождения щелей. Но эксперимент показывает: итоговое распределение определяется выбором наблюдателя, даже если он сделан позже. При 50% вы увидите <b>оба</b> типа точек одновременно — это и есть наглядная демонстрация.',
+    stTotal: 'Всего',
+    stWhich: 'Измерено',
+    stNo: 'Без изм.',
+    note: '<b>Почему это важно:</b> в схеме отложенного выбора решение принимается в точке, которую частица проходит <i>уже после щелей</i>. Классическая интуиция говорит, что поведение частицы должно быть определено в момент прохождения щелей. Но эксперимент показывает: итоговое распределение определяется выбором наблюдателя, даже если он сделан позже.',
     units: { nm: 'нм', um: 'мкм', mm: 'мм', pps: 'частиц/с', percent: '%' },
-    cv: {
-      source: 'Источник',
-      slits: 'Щели',
-      screen: 'Экран',
-      choice: 'Выбор',
-      distr: 'Распределения',
-      front: 'Попадания на экран (вид спереди)'
-    }
+    cv: { source: 'Источник', slits: 'Щели', screen: 'Экран', choice: 'Выбор', distr: 'Распределения', front: 'Попадания на экран (вид спереди)' }
   },
   en: {
     docTitle: "Wheeler's Experiment: Delayed Choice",
@@ -166,29 +196,22 @@ const I18N = {
     legendNo: 'No measurement',
     paramsHead: 'Parameters',
     lambdaLbl: 'Wavelength λ',
-    dLbl: 'Slit separation d',
+    dLbl: 'Distance d',
     aLbl: 'Slit width a',
-    LLbl: 'Screen distance L',
+    LLbl: 'Distance L',
     rateLbl: 'Particle rate',
-    probLbl: 'Fraction with which-path measurement',
+    probLbl: 'Fraction with measurement',
     fire: 'Fire',
     pause: 'Pause',
     pauseAlt: 'Resume',
     run: 'Running',
     clear: 'Clear',
-    stTotal: 'Total particles',
-    stWhich: 'Path measured',
-    stNo: 'No measurement',
-    note: '<b>Why this matters:</b> in the delayed-choice scheme the decision is made at a point the particle passes <i>after the slits</i>. Classical intuition says the particle\'s behaviour must be determined at the moment it passes the slits. But the experiment shows: the final distribution is determined by the observer\'s choice, even if made later. At 50% you will see <b>both</b> kinds of dots at once — that is the visual demonstration.',
+    stTotal: 'Total',
+    stWhich: 'Measured',
+    stNo: 'No meas.',
+    note: '<b>Why this matters:</b> in the delayed-choice scheme the decision is made at a point the particle passes <i>after the slits</i>. Classical intuition says the particle\'s behaviour must be determined at the moment it passes the slits. But the experiment shows: the final distribution is determined by the observer\'s choice, even if made later.',
     units: { nm: 'nm', um: 'µm', mm: 'mm', pps: 'particles/s', percent: '%' },
-    cv: {
-      source: 'Source',
-      slits: 'Slits',
-      screen: 'Screen',
-      choice: 'Choice',
-      distr: 'Distributions',
-      front: 'Screen hits (front view)'
-    }
+    cv: { source: 'Source', slits: 'Slits', screen: 'Screen', choice: 'Choice', distr: 'Distributions', front: 'Screen hits (front view)' }
   }
 };
 
@@ -235,7 +258,7 @@ window.addEventListener('storage', e => {
 });
 
 /* ══════════════════════════════════════════════════════════════════
-   ОРИГИНАЛЬНАЯ ЛОГИКА (без изменений физики)
+   ЛОГИКА ЭКСПЕРИМЕНТА (ФИЗИКА)
    ══════════════════════════════════════════════════════════════════ */
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const cvF = document.getElementById('front'), ctxF = cvF.getContext('2d');
@@ -588,18 +611,25 @@ bClear.addEventListener('click', () => {
 
 function resize() {
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const r = cv.getBoundingClientRect(); W = r.width || 900; H = r.height || 430;
+  
+  const r = cv.getBoundingClientRect(); 
+  W = r.width || 900; H = r.height || 430;
   cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const rf = cvF.getBoundingClientRect(); WF = rf.width || 700; HF = rf.height || 280;
+  
+  const rf = cvF.getBoundingClientRect(); 
+  WF = rf.width || 700; HF = rf.height || 280;
   cvF.width = WF * dpr; cvF.height = HF * dpr; ctxF.setTransform(dpr, 0, 0, dpr, 0, 0);
+  
   computeProfiles();
 }
 window.addEventListener('resize', resize);
 
-/* ── СТАРТ ── */
-applyLang(currentLang);
-refresh();
-resize();
+/* Запускаем после полной загрузки DOM, чтобы grid успел рассчитать размеры */
+window.addEventListener('load', () => {
+  applyLang(currentLang);
+  refresh();
+  resize();
+});
 
 function loop(ts) {
   if (!last) last = ts;
@@ -610,6 +640,7 @@ function loop(ts) {
 }
 requestAnimationFrame(loop);
 </script>
+
 <!-- ═══ УНИВЕРСАЛЬНЫЙ БЛОК: НАЗАД И ПОДЕЛИТЬСЯ ═══ -->
 <style>
   .mcc-overlay {
@@ -638,10 +669,11 @@ requestAnimationFrame(loop);
   }
   .share-mini a:hover { color: #ffb800; }
 
-  @media (max-width: 820px) {
+  @media (max-width: 1000px) {
     .mcc-overlay { top: 8px; right: 8px; gap: 4px; }
     .back-to-mcc { padding: 6px 12px; font-size: 11px; }
     .share-mini { padding: 3px 6px; font-size: 10px; }
+    .page-head { margin-top: 40px; }
   }
 </style>
 
