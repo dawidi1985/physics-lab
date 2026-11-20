@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=113847962', 'ym');
+
+    ym(113847962, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/113847962" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Опыт Штерна–Герлаха</title>
+<style>
+:root{--bg:#07080c;--panel:#101319;--line:#232a36;--text:#e7ecf5;--muted:#8b98ab;--blue:#5aa2ff;--amber:#fbbf24;--green:#33ff77}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{width:100%;height:100%;display:flex;flex-direction:column;padding:12px 16px;gap:10px;max-width:1600px;margin:0 auto}
+
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;gap:14px;flex-wrap:wrap; position:relative; padding-right: 140px;}
+h1{margin:0 0 6px;font-size:20px; display:flex; align-items:center; gap:8px;}
+
+/* Иконка и тултип */
+.info-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:50%;
+  background:var(--line); color:var(--amber); font-size:12px;
+  cursor:help; position:relative; font-family:monospace; font-weight:bold;
+}
+.info-icon:hover{background:var(--amber); color:#000;}
+
+.tooltip-box{
+  position:absolute; top:100%; left:0; z-index:100; width:600px; max-width:90vw;
+  background:rgba(16,19,25,0.98); border:1px solid var(--blue); border-radius:12px;
+  padding:16px; font-size:13px; line-height:1.6; color:var(--muted);
+  box-shadow:0 10px 40px rgba(0,0,0,0.8); pointer-events:none; opacity:0; transform:translateY(10px);
+  transition:opacity 0.2s, transform 0.2s; text-align:left; font-weight:normal;
+}
+.info-icon:hover .tooltip-box{opacity:1; transform:translateY(0); pointer-events:auto;}
+.tooltip-box b{color:var(--text);}
+.tooltip-box .hl{color:var(--amber);}
+
+.lang-switch{display:flex;gap:4px;flex-shrink:0;margin-top:2px;}
+.lang-btn{background:#171d27;color:#8b98ab;border:1px solid #2b3547;border-radius:8px;
+  padding:6px 12px;font-family:ui-monospace,monospace;font-size:12px;font-weight:650;
+  cursor:pointer;transition:all .15s;letter-spacing:.08em}
+.lang-btn:hover{background:#202836;color:#e7ecf5}
+.lang-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}
+
+.dashboard{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;flex:1;min-height:0;}
+.left-col{display:flex;flex-direction:column;gap:10px;min-height:0;}
+.right-col{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:4px;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.main-canvas{flex:1;min-height:300px;}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+
+.controls{padding:12px}
+.controls-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;}
+.row{display:flex;flex-direction:column;gap:6px;}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.val{font-family:ui-monospace,monospace;color:var(--blue);font-weight:650}
+input[type=range]{width:100%;accent-color:var(--blue);height:16px;margin:0;}
+.btns{display:flex;gap:6px; flex-wrap:wrap;}
+button{flex:1;background:#171d27;color:var(--text);border:1px solid #2b3547;border-radius:8px;padding:8px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:0.15s; min-width:100px;}
+button:hover{background:#202836}
+button.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+button.primary:hover{background:#3b82f6}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:12px 12px 0 12px;}
+.stat{background:#0c1017;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:ui-monospace,monospace;font-size:15px;font-weight:650;margin-top:2px}
+
+.note{color:var(--muted);font-size:12px;line-height:1.5;padding:0 12px 12px 12px}
+.note b{color:var(--text)}
+
+@media(max-width:1000px){
+  html,body{overflow:auto;height:auto;}
+  .wrap{height:auto;padding:16px;}
+  .dashboard{display:flex;flex-direction:column;}
+  .left-col{min-height:auto;}
+  .main-canvas{height:350px;flex:none;}
+  .right-col{overflow:visible;padding-right:0;}
+  .page-head{flex-direction:column; padding-right: 0; margin-top: 40px;}
+  .lang-switch{margin-top:10px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <h1>
+        <span data-i18n="h1">Опыт Штерна–Герлаха</span>
+        <div class="info-icon">?
+          <div class="tooltip-box" data-i18n-html="tooltipText">
+            <b>Историческая справка:</b> В 1922 году Отто Штерн и Вальтер Герлах провели эксперимент, чтобы проверить квантовую теорию Бора-Зоммерфельда. Они пропускали пучок атомов серебра через неоднородное магнитное поле.<br><br>
+            <b>Суть:</b> Классическая физика предсказывала, что пучок размажется в сплошную полосу, так как магнитные моменты атомов ориентированы случайно. Однако пучок расщепился ровно на <span class="hl">два пятна</span>.<br><br>
+            <b>Объяснение:</b> Это доказало, что спин электрона (и магнитный момент атома) квантуется. Он может принимать только два состояния: «вверх» и «вниз» относительно оси магнитного поля. Никаких промежуточных значений нет. Это один из фундаментальных экспериментов квантовой механики.
+          </div>
+        </div>
+      </h1>
+      <p class="sub" data-i18n="sub" style="margin:0;color:var(--muted);font-size:13px;">Пространственное квантование спина</p>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <div class="left-col">
+      <div class="card main-canvas">
+        <canvas id="c"></canvas>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="card controls">
+        <h2 data-i18n="paramsHead">Параметры</h2>
+        
+        <div class="controls-grid">
+          <div class="row">
+            <div class="top"><label data-i18n="magFieldLbl">Магнитное поле</label></div>
+            <div class="btns">
+              <button id="btnMagOff" data-i18n="magOff">Выкл</button>
+              <button id="btnMagOn" class="primary" data-i18n="magOn">Вкл</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="top"><label data-i18n="orientationLbl">Ориентация поля</label></div>
+            <div class="btns">
+              <button id="btnOrientZ" class="primary" data-i18n="orientZ">Вертикально</button>
+              <button id="btnOrientX" data-i18n="orientX">Горизонтально</button>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="top"><label for="speed" data-i18n="speedLbl">Скорость частиц</label><span class="val" id="speedV">1.0x</span></div>
+            <input id="speed" type="range" min="0.5" max="2.0" step="0.1" value="1.0">
+          </div>
+        </div>
+
+        <div class="btns" style="margin-top:10px;">
+          <button id="btnClear" data-i18n="clear">Сброс</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><div class="k" data-i18n="stUp">Спин Вверх</div><div class="v" id="nUp" style="color:#fbbf24;">0</div></div>
+          <div class="stat"><div class="k" data-i18n="stDown">Спин Вниз</div><div class="v" id="nDown" style="color:#5aa2ff;">0</div></div>
+        </div>
+        <div class="note" data-i18n-html="note">
+          <b>Что происходит:</b> В классической физике магнитные моменты должны распределяться непрерывно, создавая сплошную полосу. В квантовой механике спин электрона квантуется: он принимает только два значения. Нажмите «Горизонтально», чтобы увидеть, как ось квантования меняет направление!
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const I18N = {
+  ru: {
+    docTitle: 'Опыт Штерна–Герлаха',
+    h1: 'Опыт Штерна–Герлаха',
+    sub: 'Пространственное квантование спина',
+    tooltipText: '<b>Историческая справка:</b> В 1922 году Отто Штерн и Вальтер Герлах провели эксперимент, чтобы проверить квантовую теорию Бора-Зоммерфельда. Они пропускали пучок атомов серебра через неоднородное магнитное поле.<br><br><b>Суть:</b> Классическая физика предсказывала, что пучок размажется в сплошную полосу, так как магнитные моменты атомов ориентированы случайно. Однако пучок расщепился ровно на <span class="hl">два пятна</span>.<br><br><b>Объяснение:</b> Это доказало, что спин электрона (и магнитный момент атома) квантуется. Он может принимать только два состояния: «вверх» и «вниз» относительно оси магнитного поля. Никаких промежуточных значений нет. Это один из фундаментальных экспериментов квантовой механики.',
+    paramsHead: 'Параметры',
+    magFieldLbl: 'Магнитное поле',
+    magOff: 'Выкл',
+    magOn: 'Вкл',
+    orientationLbl: 'Ориентация поля',
+    orientZ: 'Вертикально',
+    orientX: 'Горизонтально',
+    speedLbl: 'Скорость частиц',
+    clear: 'Сброс',
+    stUp: 'Спин Вверх',
+    stDown: 'Спин Вниз',
+    note: '<b>Что происходит:</b> В классической физике магнитные моменты должны распределяться непрерывно, создавая сплошную полосу. В квантовой механике спин электрона квантуется: он принимает только два значения. Нажмите «Горизонтально», чтобы увидеть, как ось квантования меняет направление!'
+  },
+  en: {
+    docTitle: 'Stern-Gerlach Experiment',
+    h1: 'Stern-Gerlach Experiment',
+    sub: 'Spatial quantization of spin',
+    tooltipText: '<b>Historical background:</b> In 1922, Otto Stern and Walther Gerlach conducted an experiment to test the Bohr-Sommerfeld quantum theory. They passed a beam of silver atoms through an inhomogeneous magnetic field.<br><br><b>The core idea:</b> Classical physics predicted the beam would spread into a continuous smear, as the magnetic moments of atoms are randomly oriented. However, the beam split into exactly <span class="hl">two distinct spots</span>.<br><br><b>Explanation:</b> This proved that the electron spin (and the atom\'s magnetic moment) is quantized. It can only take two states: "up" and "down" relative to the magnetic field axis. There are no intermediate values. It is one of the fundamental experiments of quantum mechanics.',
+    paramsHead: 'Parameters',
+    magFieldLbl: 'Magnetic Field',
+    magOff: 'Off',
+    magOn: 'On',
+    orientationLbl: 'Field Orientation',
+    orientZ: 'Vertical',
+    orientX: 'Horizontal',
+    speedLbl: 'Particle Speed',
+    clear: 'Reset',
+    stUp: 'Spin Up',
+    stDown: 'Spin Down',
+    note: '<b>What is happening:</b> In classical physics, magnetic moments should distribute continuously, creating a continuous band. In quantum mechanics, electron spin is quantized: it takes only two values. Click "Horizontal" to see how the quantization axis changes direction!'
+  }
+};
+
+let currentLang = 'ru';
+(function initLang(){
+  let urlLang = null;
+  try { urlLang = new URLSearchParams(location.search).get('lang'); } catch(e){}
+  const stored = localStorage.getItem('lang');
+  const candidate = (urlLang || stored || 'ru').toLowerCase();
+  currentLang = I18N[candidate] ? candidate : 'ru';
+})();
+
+function applyLang(lang){
+  if (!I18N[lang]) lang = 'ru';
+  currentLang = lang;
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = d.docTitle;
+
+  // Обновляем только текстовые узлы, не трогая структуру иконки
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (d[k] != null) el.textContent = d[k];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const k = el.dataset.i18nHtml;
+    if (d[k] != null) el.innerHTML = d[k];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+
+  try { localStorage.setItem('lang', lang); } catch(e){}
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   ЛОГИКА ЭКСПЕРИМЕНТА
+   ══════════════════════════════════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const btnMagOff = document.getElementById('btnMagOff');
+const btnMagOn = document.getElementById('btnMagOn');
+const btnOrientZ = document.getElementById('btnOrientZ');
+const btnOrientX = document.getElementById('btnOrientX');
+const btnClear = document.getElementById('btnClear');
+const speedSlider = document.getElementById('speed');
+const speedV = document.getElementById('speedV');
+const nUpEl = document.getElementById('nUp');
+const nDownEl = document.getElementById('nDown');
+
+let W = 900, H = 430, dpr = 1;
+let fieldOn = true;
+let fieldAxis = 'z';
+let particleSpeed = 1.0;
+let nUp = 0, nDown = 0;
+let particles = [];
+let lastTime = 0;
+let spawnAcc = 0;
+
+const CFG = {
+  sourceX: 150,
+  sourceY: 250,
+  magnetX: 450,
+  magnetY: 250,
+  screenX: 800,
+  screenW: 160,
+  screenH: 200,
+  particleRate: 30,
+  baseSpeed: 300
+};
+
+function proj(x, y, z) {
+  return {
+    x: x + z * 0.5,
+    y: y - z * 0.5
+  };
+}
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  W = rect.width || 900;
+  H = rect.height || 430;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  
+  const scale = Math.min(W / 1100, H / 500);
+  CFG.sourceX = 100 * scale + 50;
+  CFG.sourceY = 250 * scale;
+  CFG.magnetX = 400 * scale + 50;
+  CFG.magnetY = 250 * scale;
+  CFG.screenX = 850 * scale;
+  
+  CFG.screenW = 160 * scale;
+  CFG.screenH = 200 * scale;
+}
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.z = 0;
+    this.vx = CFG.baseSpeed * particleSpeed;
+    this.vy = 0;
+    this.vz = 0;
+    this.state = null;
+    this.active = true;
+    this.split = false;
+  }
+  
+  update(dt) {
+    if (!this.active) return;
+    
+    if (!this.split && this.x >= (CFG.magnetX - CFG.sourceX)) {
+      this.split = true;
+      if (fieldOn) {
+        const maxDeflection = CFG.screenH / 2 - 20;
+        const timeToScreen = (CFG.screenX - CFG.magnetX) / this.vx;
+        
+        if (Math.random() < 0.5) {
+          this.state = 'up';
+          if (fieldAxis === 'z') this.vy = -maxDeflection / timeToScreen;
+          else this.vz = -maxDeflection / timeToScreen;
+          nUp++;
+        } else {
+          this.state = 'down';
+          if (fieldAxis === 'z') this.vy = maxDeflection / timeToScreen;
+          else this.vz = maxDeflection / timeToScreen;
+          nDown++;
+        }
+        updateStats();
+      }
+    }
+    
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.z += this.vz * dt;
+    
+    if (this.x >= (CFG.screenX - CFG.sourceX)) {
+      if (Math.abs(this.y) > CFG.screenH / 2) {
+        this.y = Math.sign(this.y) * (CFG.screenH / 2);
+      }
+      if (Math.abs(this.z) > CFG.screenW / 2) {
+        this.z = Math.sign(this.z) * (CFG.screenW / 2);
+      }
+      this.active = false;
+    }
+  }
+  
+  draw() {
+    if (!this.active) return;
+    
+    let color = '#b9c8dd';
+    if (this.state === 'up') color = '#fbbf24';
+    if (this.state === 'down') color = '#5aa2ff';
+    
+    const screenPos = proj(CFG.sourceX + this.x, CFG.sourceY + this.y, this.z);
+    
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(screenPos.x, screenPos.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = color;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function spawnParticle() {
+  particles.push(new Particle());
+}
+
+function updateStats() {
+  nUpEl.textContent = nUp;
+  nDownEl.textContent = nDown;
+}
+
+function resetSim() {
+  particles = [];
+  nUp = 0;
+  nDown = 0;
+  updateStats();
+  spawnAcc = 0;
+}
+
+function setField(on) {
+  fieldOn = on;
+  btnMagOn.classList.toggle('primary', on);
+  btnMagOff.classList.toggle('primary', !on);
+  resetSim();
+}
+
+function setOrientation(axis) {
+  fieldAxis = axis;
+  btnOrientZ.classList.toggle('primary', axis === 'z');
+  btnOrientX.classList.toggle('primary', axis === 'x');
+  resetSim();
+}
+
+btnMagOn.addEventListener('click', () => setField(true));
+btnMagOff.addEventListener('click', () => setField(false));
+btnOrientZ.addEventListener('click', () => setOrientation('z'));
+btnOrientX.addEventListener('click', () => setOrientation('x'));
+btnClear.addEventListener('click', resetSim);
+
+speedSlider.addEventListener('input', (e) => {
+  particleSpeed = parseFloat(e.target.value);
+  speedV.textContent = particleSpeed.toFixed(1) + 'x';
+});
+
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#05070c';
+  ctx.fillRect(0, 0, W, H);
+  
+  ctx.strokeStyle = 'rgba(60,90,130,.1)';
+  ctx.lineWidth = 1;
+  const floorY = CFG.sourceY + 100;
+  for (let x = 0; x < W; x += 40) {
+    let p1 = proj(x, floorY, -200);
+    let p2 = proj(x, floorY, 200);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+  for (let z = -200; z <= 200; z += 40) {
+    let p1 = proj(0, floorY, z);
+    let p2 = proj(W, floorY, z);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+
+  const sPos = proj(CFG.sourceX, CFG.sourceY, 0);
+  ctx.fillStyle = '#1a2540';
+  ctx.strokeStyle = '#4a6a9a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.rect(sPos.x - 25, sPos.y - 25, 50, 50);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#8fa3bd';
+  ctx.font = '11px ui-monospace,monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ПЕЧЬ', sPos.x, sPos.y + 45);
+  
+  if (fieldOn) {
+    ctx.fillStyle = 'rgba(74,138,255,0.1)';
+    ctx.strokeStyle = 'rgba(74,138,255,0.6)';
+    ctx.setLineDash([5, 5]);
+    
+    if (fieldAxis === 'z') {
+      const pTop = proj(CFG.magnetX, CFG.magnetY - 80, 0);
+      const pBot = proj(CFG.magnetX, CFG.magnetY + 80, 0);
+      ctx.strokeRect(pTop.x - 40, pTop.y, 80, 15);
+      ctx.strokeRect(pBot.x - 40, pBot.y - 15, 80, 15);
+      ctx.fillStyle = '#5aa2ff';
+      ctx.font = 'bold 14px Inter';
+      ctx.fillText('N', pTop.x, pTop.y - 10);
+      ctx.fillText('S', pBot.x, pBot.y + 25);
+    } else {
+      const pLeft = proj(CFG.magnetX - 80, CFG.magnetY, 0);
+      const pRight = proj(CFG.magnetX + 80, CFG.magnetY, 0);
+      ctx.strokeRect(pLeft.x, pLeft.y - 30, 15, 60);
+      ctx.strokeRect(pRight.x - 15, pRight.y - 30, 15, 60);
+      ctx.fillStyle = '#5aa2ff';
+      ctx.font = 'bold 14px Inter';
+      ctx.fillText('N', pLeft.x - 15, pLeft.y + 5);
+      ctx.fillText('S', pRight.x + 15, pRight.y + 5);
+    }
+    ctx.setLineDash([]);
+    
+    const pLabel = proj(CFG.magnetX, CFG.magnetY + 120, 0);
+    ctx.fillStyle = '#8fa3bd';
+    ctx.fillText('МАГНИТ', pLabel.x, pLabel.y);
+  }
+  
+  const pS1 = proj(CFG.screenX, CFG.magnetY - CFG.screenH/2, -CFG.screenW/2);
+  const pS2 = proj(CFG.screenX, CFG.magnetY - CFG.screenH/2, CFG.screenW/2);
+  const pS3 = proj(CFG.screenX, CFG.magnetY + CFG.screenH/2, CFG.screenW/2);
+  const pS4 = proj(CFG.screenX, CFG.magnetY + CFG.screenH/2, -CFG.screenW/2);
+  
+  ctx.fillStyle = 'rgba(20, 30, 45, 0.6)';
+  ctx.strokeStyle = '#2a3547';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(pS1.x, pS1.y); ctx.lineTo(pS2.x, pS2.y);
+  ctx.lineTo(pS3.x, pS3.y); ctx.lineTo(pS4.x, pS4.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  ctx.strokeStyle = 'rgba(60,90,130,.2)';
+  ctx.lineWidth = 1;
+  for (let i = -CFG.screenW/2; i <= CFG.screenW/2; i += 20) {
+    let p1 = proj(CFG.screenX, CFG.magnetY - CFG.screenH/2, i);
+    let p2 = proj(CFG.screenX, CFG.magnetY + CFG.screenH/2, i);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+  for (let i = -CFG.screenH/2; i <= CFG.screenH/2; i += 20) {
+    let p1 = proj(CFG.screenX, CFG.magnetY + i, -CFG.screenW/2);
+    let p2 = proj(CFG.screenX, CFG.magnetY + i, CFG.screenW/2);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+  
+  const pScreenLabel = proj(CFG.screenX, CFG.magnetY - CFG.screenH/2 - 20, 0);
+  ctx.fillStyle = '#8fa3bd';
+  ctx.font = '11px ui-monospace,monospace';
+  ctx.fillText('ЭКРАН', pScreenLabel.x, pScreenLabel.y);
+  
+  particles.forEach(p => p.draw());
+  
+  if (fieldOn) {
+    const maxDeflection = CFG.screenH / 2 - 20;
+    let pUp, pDown;
+    
+    if (fieldAxis === 'z') {
+      pUp = proj(CFG.screenX, CFG.magnetY - maxDeflection, 0);
+      pDown = proj(CFG.screenX, CFG.magnetY + maxDeflection, 0);
+    } else {
+      const maxZ = CFG.screenW / 2 - 20;
+      pUp = proj(CFG.screenX, CFG.magnetY, -maxZ);
+      pDown = proj(CFG.screenX, CFG.magnetY, maxZ);
+    }
+    
+    ctx.fillStyle = 'rgba(251,191,36,0.2)';
+    ctx.beginPath(); ctx.arc(pUp.x, pUp.y, 12, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText('UP: ' + nUp, pUp.x, pUp.y - 20);
+    
+    ctx.fillStyle = 'rgba(90,162,255,0.2)';
+    ctx.beginPath(); ctx.arc(pDown.x, pDown.y, 12, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#5aa2ff';
+    ctx.fillText('DOWN: ' + nDown, pDown.x, pDown.y + 25);
+  }
+}
+
+function loop(time) {
+  if (!lastTime) lastTime = time;
+  const dt = Math.min((time - lastTime) / 1000, 0.05);
+  lastTime = time;
+  
+  spawnAcc += CFG.particleRate * dt;
+  while (spawnAcc >= 1) { spawnParticle(); spawnAcc -= 1; }
+  
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update(dt);
+    if (!particles[i].active) particles.splice(i, 1);
+  }
+  
+  drawScene();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('load', () => {
+  applyLang(currentLang);
+  resize();
+  resetSim();
+  requestAnimationFrame(loop);
+});
+</script>
+
+<!-- ═══ УНИВЕРСАЛЬНЫЙ БЛОК: НАЗАД И ПОДЕЛИТЬСЯ ═══ -->
+<style>
+  .mcc-overlay {
+    position: fixed; top: 16px; right: 16px; z-index: 99999;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    font-family: 'Courier New', monospace;
+  }
+  .back-to-mcc {
+    background: rgba(0, 15, 5, 0.85); color: #33ff77;
+    border: 1px solid #33ff77; padding: 8px 16px;
+    font-size: 13px; font-weight: 700; text-decoration: none;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    box-shadow: 0 0 12px rgba(51, 255, 119, 0.3);
+    transition: all 0.2s ease; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .back-to-mcc:hover { background: rgba(51, 255, 119, 0.15); box-shadow: 0 0 20px rgba(51, 255, 119, 0.6); transform: translateX(-2px); }
+  
+  .share-mini {
+    background: rgba(0, 15, 5, 0.85); border: 1px solid #1a6633;
+    border-radius: 6px; padding: 4px 8px; display: flex; gap: 6px;
+  }
+  .share-mini a {
+    color: #33ff77; text-decoration: none; font-size: 11px; font-weight: bold;
+    transition: color 0.2s;
+  }
+  .share-mini a:hover { color: #ffb800; }
+
+  @media (max-width: 1000px) {
+    .mcc-overlay { top: 8px; right: 8px; gap: 4px; }
+    .back-to-mcc { padding: 6px 12px; font-size: 11px; }
+    .share-mini { padding: 3px 6px; font-size: 10px; }
+    .page-head { margin-top: 40px; }
+  }
+</style>
+
+<div class="mcc-overlay">
+  <a href="index.html" class="back-to-mcc">
+    <span>←</span> В ЦУП
+  </a>
+  <div class="share-mini">
+    <a href="https://t.me/share/url?url=https://blackh0le.ru/stern_gerlach.html&text=Опыт Штерна-Герлаха" target="_blank">TG</a>
+    <a href="https://vk.com/share.php?url=https://blackh0le.ru/stern_gerlach.html" target="_blank">VK</a>
+    <a href="https://twitter.com/intent/tweet?url=https://blackh0le.ru/stern_gerlach.html" target="_blank">X</a>
+  </div>
+</div>
+<!-- ═══════════════════════════════════════════════════════ -->
+</body>
+</html>

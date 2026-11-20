@@ -10,7 +10,7 @@
 
 <!-- Open Graph -->
 <meta property="og:title" content="ЦУП-7 · Физические симуляции">
-<meta property="og:description" content="Черная дыра в реальном времени и 5 квантовых экспериментов прямо в браузере.">
+<meta property="og:description" content="Черная дыра в реальном времени и 6 квантовых экспериментов прямо в браузере.">
 <meta property="og:image" content="https://blackh0le.ru/preview.jpg">
 <meta property="og:url" content="https://blackh0le.ru">
 <meta property="og:type" content="website">
@@ -364,6 +364,10 @@ html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;color:v
   <a href="STO.html" class="exp-btn">
     <span class="num">05</span><span data-i18n="exp5">ПАРАДОКС БЛИЗНЕЦОВ</span><span class="tag">⟶</span>
   </a>
+  <!-- НОВЫЙ ЭКСПЕРИМЕНТ -->
+  <a href="stern_gerlach.html" class="exp-btn">
+    <span class="num">06</span><span data-i18n="exp6">ОПЫТ ШТЕРНА–ГЕРЛАХА</span><span class="tag">⟶</span>
+  </a>
 
   <div class="menu-foot" data-i18n-html="menuFoot">
     МОДУЛЬ 0 · ЧЁРНАЯ ДЫРА<br>
@@ -435,6 +439,7 @@ const I18N = {
     exp3: 'ОТЛОЖЕННЫЙ ВЫБОР',
     exp4: 'ДВЕ ЩЕЛИ · ФРЕНЕЛЬ',
     exp5: 'ПАРАДОКС БЛИЗНЕЦОВ',
+    exp6: 'ОПЫТ ШТЕРНА–ГЕРЛАХА',
     menuFoot: 'МОДУЛЬ 0 · ЧЁРНАЯ ДЫРА<br>МЕТРИКА ШВАРЦШИЛЬДА<br>ПЕРЕТАЩИ · ОРБИТА<br>КОЛЕСО · МАСШТАБ',
     hud1: 'СЕКТОР 7-G',
     hud2: 'M = 1.0 · r<sub>s</sub> = 2.0',
@@ -460,6 +465,7 @@ const I18N = {
     exp3: 'DELAYED CHOICE',
     exp4: 'DOUBLE SLIT · FRESNEL',
     exp5: 'TWIN PARADOX',
+    exp6: 'STERN-GERLACH EXPERIMENT',
     menuFoot: 'MODULE 0 · BLACK HOLE<br>SCHWARZSCHILD METRIC<br>DRAG · ORBIT<br>WHEEL · ZOOM',
     hud1: 'SECTOR 7-G',
     hud2: 'M = 1.0 · r<sub>s</sub> = 2.0',
@@ -639,7 +645,6 @@ vec3 starfield(vec3 d) {
   return col;
 }
 
-// ОБНОВЛЕННАЯ ФУНКЦИЯ ЦВЕТА (Ближе к реальному спектру абсолютно черного тела)
 vec3 blackbody(float T) {
   T = clamp(T, 1000.0, 30000.0);
   float t = T / 100.0;
@@ -672,8 +677,6 @@ vec4 diskSample(vec3 P, vec3 rayDir, float t) {
   float r = length(P);
   float ang = atan(P.z, P.x);
   float omega = 8.0 * pow(r, -1.5);
-  
-  // ИЗМЕНЕНИЕ 1: Обратное вращение диска (шум крутится в другую сторону)
   float a = ang + omega * t; 
   vec3 q = vec3(cos(a) * r, 0.35 * sin(r * 0.7 + t * 0.2), sin(a) * r);
 
@@ -691,7 +694,6 @@ vec4 diskSample(vec3 P, vec3 rayDir, float t) {
 
   if (dens < 0.004) return vec4(0.0);
 
-  // ИЗМЕНЕНИЕ 2: Вектор скорости направлен в другую сторону (для правильного Доплера)
   vec3 vdir = normalize(cross(P, vec3(0, 1, 0))); 
   float beta = min(sqrt(M / r) / sqrt(max(1.0 - 2.0 * M / r, 0.04)), 0.92);
   vec3 bv = vdir * beta;
@@ -700,14 +702,11 @@ vec4 diskSample(vec3 P, vec3 rayDir, float t) {
   float gam = 1.0 / sqrt(max(1.0 - beta * beta, 1e-4));
   float doppler = 1.0 / (gam * (1.0 - dot(bv, nObs)));
   float grav = sqrt(max(1.0 - 2.0 * M / r, 0.0));
-  
-  // ИЗМЕНЕНИЕ 3: Расширен диапазон сдвига для более ярких цветов (синий/красный)
   float shift = clamp(doppler * grav, 0.1, 5.0);
 
   float T = 9500.0 * pow(R_IN / r, 0.75);
   vec3 emit = blackbody(T * shift);
 
-  // ИЗМЕНЕНИЕ 4: Усилено релятивистское усиление яркости (Beaming)
   float I = dens * pow(shift, 3.5) * 2.5;
   I *= 0.75 + 0.85 * turb;
   I += smoothstep(R_IN + 2.6, R_IN, r) * dens * 2.4;
